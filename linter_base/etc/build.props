@@ -1,0 +1,17 @@
+title = Isabelle Linter
+module = $ISABELLE_LINTER_JAR
+requirements = \
+  env:ISABELLE_SCALA_JAR
+sources = \
+  src/ast.scala \
+  src/lint_store.scala \
+  src/linter.scala \
+  src/linter_configuration.scala \
+  src/linter_interface.scala \
+  src/linter_tool.scala \
+  src/lints.scala \
+  src/markup.scala \
+  src/parsers.scala \
+  src/reporter.scala \
+  src/utils.scala
+services = isabelle.linter.Linter_Tool

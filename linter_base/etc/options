@@ -1,0 +1,13 @@
+section "Linter"
+
+public option linter : bool = true
+  -- "enable linter"
+
+public option enabled_bundles : string = "default"
+  -- "enabled lint bundles"
+
+public option enabled_lints : string = ""
+  -- "extra enabled lints"
+
+public option disabled_lints : string = ""
+  -- "disabled lints"
