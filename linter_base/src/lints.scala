@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 object Apply_Isar_Switch extends Proper_Commands_Lint {
 
   val name = "apply_isar_switch"
-  val severity: Severity.Level = Severity.Medium
+  val severity: Severity.Level = Severity.High
 
   @tailrec
   def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
@@ -349,7 +349,7 @@ object Bad_Style_Command
       "Bad style command.",
       "bad_style_command",
       List("back", "apply_end"),
-      Severity.Medium
+      Severity.Low
     )
 
 object Diagnostic_Command
@@ -462,7 +462,7 @@ object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint {
 object Lemma_Transforming_Attribute extends Parser_Lint {
 
   val name: String = "lemma_transforming_attribute"
-  val severity: Severity.Level = Severity.Medium
+  val severity: Severity.Level = Severity.High
 
   private def simp_or_cong(attr: List[Elem]): Boolean = attr match {
     case head :: _ => List("simplified", "rule_format").contains(head.info.content)
@@ -482,7 +482,7 @@ object Lemma_Transforming_Attribute extends Parser_Lint {
 object Implicit_Rule extends AST_Lint {
 
   val name: String = "implicit_rule"
-  val severity: Severity.Level = Severity.Medium
+  val severity: Severity.Level = Severity.High
 
   override def lint_method(method: Text.Info[Method], report: Reporter): Option[Lint_Result] =
     method.info match {
@@ -497,7 +497,7 @@ object Implicit_Rule extends AST_Lint {
 object Complex_Isar_Initial_Method extends AST_Lint {
 
   val name: String = "complex_isar_initial_method"
-  val severity: Severity.Level = Severity.Medium
+  val severity: Severity.Level = Severity.High
 
   def has_auto(method: Method): Boolean = method match {
     case Simple_Method(RToken(_, name, _), _, _) => name == "auto"
@@ -550,7 +550,7 @@ object Auto_Structural_Composition extends AST_Lint {
 object Complex_Method extends AST_Lint {
 
   val name: String = "complex_method"
-  val severity: Severity.Level = Severity.Medium
+  val severity: Severity.Level = Severity.High
 
   val modifier_length: Int = 1
   val combinator_threshold: Int = 4

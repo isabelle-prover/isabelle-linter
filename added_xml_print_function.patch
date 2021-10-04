@@ -1,0 +1,36 @@
+Index: src/Pure/PIDE/command.ML
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/Pure/PIDE/command.ML b/src/Pure/PIDE/command.ML
+--- a/src/Pure/PIDE/command.ML	(revision 74445:75d14ac0547e9473279bf6852bd7377700d93ae6)
++++ b/src/Pure/PIDE/command.ML	(revision 74445+:75d14ac0547e+)
+@@ -441,6 +441,27 @@
+             else ()}
+       else NONE);
+ 
++val _ =
++  let
++    fun get_out s = case s of
++        "info" => SOME writeln
++      | "warn" => SOME warning
++      | _ => NONE
++    fun write_msgs args =
++      case args of
++        level :: msg :: args1 =>
++          let
++            val msg1 = (msg |> XML.parse |> YXML.string_of) handle _ => msg
++            val _ = case get_out level of SOME out => out msg1 | NONE => ()
++          in write_msgs args1 end
++      | _ => ()
++  in
++    print_function "print_xml"
++      (fn {args, ...} =>
++        SOME {delay = NONE, pri = Task_Queue.urgent_pri + 1, persistent = false, strict = false,
++          print_fn = fn _ => fn _ => write_msgs args})
++  end;
++
+ 
+ (* combined execution *)
+ 

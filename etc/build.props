@@ -9,4 +9,5 @@ resources = \
   services.xml \
   plugin.props
 sources = \
+  src/overlay_lint_reporter.scala \
   src/linter_dockable.scala

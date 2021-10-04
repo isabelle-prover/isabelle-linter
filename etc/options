@@ -2,9 +2,3 @@ section "Linter"
 
 public option lint_all : bool = true
   -- "display the lints of the whole document"
-
-section "Linter Rendering"
-
-option linter_low_color: string = "0099FFFF"
-option linter_medium_color: string = "FF9900FF"
-option linter_high_color: string = "FF0000FF"

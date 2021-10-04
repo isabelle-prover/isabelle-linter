@@ -11,7 +11,7 @@ import isabelle.linter._
 import org.gjt.sp.jedit.View
 
 object Linter_Dockable {
-  private val linter = new PIDE_Linter_Variable(XML_Lint_Reporter)
+  private val linter = new PIDE_Linter_Variable(Overlay_Lint_Reporter)
 
   private def do_replace(
     doc_view: Document_View,
@@ -67,7 +67,7 @@ class PIDE_Linter_Variable[A](reporter: Reporter[A])
   }
 
   private val main =
-    Session.Consumer[Any](getClass.getName) { case _ =>
+    Session.Consumer[Any](getClass.getName) { _ =>
       GUI_Thread.later {
         Isabelle_Thread.fork(name = "linter") {
           refresh_lint()
@@ -116,23 +116,12 @@ class Linter_Dockable(view: View, position: String)
       val new_output0 = Linter_Dockable.linter.get match {
         case None => disabled
         case Some(linter) =>
-          val current_command =
-            PIDE.editor.current_command(view, snapshot) match {
-              case None          => Command.empty
-              case Some(command) => command
-            }
-
-          val command_lints =
-            linter.report_for_command(snapshot, current_command.id)
 
           lazy val snapshot_lints =
             linter.report_for_snapshot(snapshot)
 
-          val all_lints =
-            if (lint_all && !snapshot_lints.isEmpty)
-              separator ::: snapshot_lints
-            else Nil
-          command_lints ::: all_lints
+          if (lint_all && snapshot_lints.nonEmpty) separator ::: snapshot_lints
+          else Nil
       }
       val new_output = if (new_output0.isEmpty) List(XML.Text("No lints")) else new_output0
 
