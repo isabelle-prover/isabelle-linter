@@ -12,46 +12,6 @@ import org.gjt.sp.jedit.View
 
 object Linter_Dockable {
   private val linter = new PIDE_Linter_Variable(Overlay_Lint_Reporter)
-
-  private def do_replace(
-    doc_view: Document_View,
-    range: Text.Range,
-    content: String): Unit =
-  {
-    val text_area = doc_view.text_area
-    val buffer = text_area.getBuffer
-    JEdit_Lib.buffer_edit(buffer) {
-      buffer.remove(range.start, range.length)
-      text_area.moveCaretPosition(range.start)
-      text_area.setSelectedText(content)
-    }
-  }
-
-  class Handler extends Active.Handler {
-    override def handle(
-      view: View,
-      text: String,
-      elem: XML.Elem,
-      doc_view: Document_View,
-      snapshot: Document.Snapshot): Boolean =
-    {
-      elem match {
-        case XML.Elem(Markup(Linter_Markup.LINT_EDIT, props), _) =>
-          for {
-            range <- Position.Range.unapply(props)
-            content <- Markup.Content.unapply(props)
-          } do_replace(doc_view, range, content)
-          true
-        case XML.Elem(Markup(Linter_Markup.LINT_LOCATION, props), _) =>
-          for {
-            range <- Position.Range.unapply(props)
-          } doc_view.text_area.moveCaretPosition(range.start)
-          true
-        case _ => false
-      }
-    }
-  }
-
 }
 
 class PIDE_Linter_Variable[A](reporter: Reporter[A])

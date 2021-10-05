@@ -156,7 +156,7 @@ object XML_Lint_Reporter extends Reporter[XML.Body] {
 
   def edit_markup(edit: Linter.Edit): XML.Body = XML.Elem(
     Markup(
-      Linter_Markup.LINT_EDIT,
+      Markup.SENDBACK,
       Position.Range(edit.range) ::: Markup.Content(edit.replacement)
     ),
     text(edit.message)
@@ -164,7 +164,7 @@ object XML_Lint_Reporter extends Reporter[XML.Body] {
 
   def position_markup(lint_result: Linter.Lint_Result): XML.Body =
     text("At ") ::: XML.Elem(
-      Markup(Linter_Markup.LINT_LOCATION, Position.Range(lint_result.range)),
+      Markup(Markup.GOTO_OFFSET, Position.Range(lint_result.range)),
       text(lint_result.line_range.start.print)
     ) :: text(":\n")
 

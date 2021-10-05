@@ -6,7 +6,6 @@ requirements = \
   env:ISABELLE_LINTER_JAR
 resources = \
   dockables.xml \
-  services.xml \
   plugin.props
 sources = \
   src/overlay_lint_reporter.scala \
