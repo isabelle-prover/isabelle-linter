@@ -4,9 +4,9 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
 diff --git a/src/Pure/PIDE/command.ML b/src/Pure/PIDE/command.ML
---- a/src/Pure/PIDE/command.ML	(revision 74445:75d14ac0547e9473279bf6852bd7377700d93ae6)
-+++ b/src/Pure/PIDE/command.ML	(revision 74445+:75d14ac0547e+)
-@@ -441,6 +441,27 @@
+--- a/src/Pure/PIDE/command.ML	(revision 74475:8e9f38240c05ecd579421f078c60e152f15b9260)
++++ b/src/Pure/PIDE/command.ML	(revision 74475+:8e9f38240c05+)
+@@ -441,6 +441,28 @@
              else ()}
        else NONE);
  
@@ -15,6 +15,7 @@ diff --git a/src/Pure/PIDE/command.ML b/src/Pure/PIDE/command.ML
 +    fun get_out s = case s of
 +        "info" => SOME writeln
 +      | "warn" => SOME warning
++      | "error" => SOME error
 +      | _ => NONE
 +    fun write_msgs args =
 +      case args of

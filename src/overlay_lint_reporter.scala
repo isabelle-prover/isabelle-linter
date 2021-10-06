@@ -23,7 +23,7 @@ object Overlay_Lint_Reporter extends Reporter[XML.Body] {
       (command, results) <- commands.toSeq
     } {
       val res = results.map(_._2).flatMap { result =>
-        val level = if (result.severity == Severity.High) "warn" else "info"
+        val level = result.severity.toString
         val edit = result.edit match {
           case Some(edit) => text("\n  Consider: ") ::: edit_markup(edit)
           case None       => Nil

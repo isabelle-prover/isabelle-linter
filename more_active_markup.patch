@@ -4,13 +4,13 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
 diff --git a/src/Pure/PIDE/markup.scala b/src/Pure/PIDE/markup.scala
---- a/src/Pure/PIDE/markup.scala	(revision 74445:75d14ac0547e9473279bf6852bd7377700d93ae6)
-+++ b/src/Pure/PIDE/markup.scala	(revision 74445+:75d14ac0547e+)
+--- a/src/Pure/PIDE/markup.scala	(revision 74475:8e9f38240c05ecd579421f078c60e152f15b9260)
++++ b/src/Pure/PIDE/markup.scala	(revision 74475+:8e9f38240c05+)
 @@ -624,6 +624,7 @@
    val Result = new Properties.String(RESULT)
  
    val JEDIT_ACTION = "jedit_action"
-+  val GOTO_OFFSET = "goto_offset"
++  val GOTO_POSITION = "goto_position"
  
  
    /* protocol message functions */
@@ -20,14 +20,14 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
 diff --git a/src/Pure/PIDE/rendering.scala b/src/Pure/PIDE/rendering.scala
---- a/src/Pure/PIDE/rendering.scala	(revision 74445:75d14ac0547e9473279bf6852bd7377700d93ae6)
-+++ b/src/Pure/PIDE/rendering.scala	(revision 74445+:75d14ac0547e+)
+--- a/src/Pure/PIDE/rendering.scala	(revision 74475:8e9f38240c05ecd579421f078c60e152f15b9260)
++++ b/src/Pure/PIDE/rendering.scala	(revision 74475+:8e9f38240c05+)
 @@ -219,7 +219,7 @@
  
    val active_elements =
      Markup.Elements(Markup.DIALOG, Markup.BROWSER, Markup.GRAPHVIEW, Markup.THEORY_EXPORTS,
 -      Markup.SENDBACK, Markup.JEDIT_ACTION, Markup.SIMP_TRACE_PANEL)
-+      Markup.SENDBACK, Markup.JEDIT_ACTION, Markup.GOTO_OFFSET, Markup.SIMP_TRACE_PANEL)
++      Markup.SENDBACK, Markup.JEDIT_ACTION, Markup.GOTO_POSITION, Markup.SIMP_TRACE_PANEL)
  
    val background_elements =
      Document_Status.Command_Status.proper_elements + Markup.WRITELN_MESSAGE +
@@ -37,23 +37,21 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
 diff --git a/src/Tools/jEdit/src/active.scala b/src/Tools/jEdit/src/active.scala
---- a/src/Tools/jEdit/src/active.scala	(revision 74445:75d14ac0547e9473279bf6852bd7377700d93ae6)
-+++ b/src/Tools/jEdit/src/active.scala	(revision 74445+:75d14ac0547e+)
-@@ -72,6 +72,13 @@
+--- a/src/Tools/jEdit/src/active.scala	(revision 74475:8e9f38240c05ecd579421f078c60e152f15b9260)
++++ b/src/Tools/jEdit/src/active.scala	(revision 74475+:8e9f38240c05+)
+@@ -72,6 +72,11 @@
            }
            true
  
-+        case XML.Elem(Markup(Markup.GOTO_OFFSET, props), _) =>
-+          val link = Position.Offset.unapply(props) map { offset =>
-+            PIDE.editor.hyperlink_model(focus = true, model, offset)
-+          }
++        case XML.Elem(Markup(Markup.GOTO_POSITION, pos), _) =>
++          val link = PIDE.editor.hyperlink_position(true, snapshot, pos)
 +          GUI_Thread.later { link.foreach(_.follow(view)) }
 +          true
 +
          case XML.Elem(Markup(Markup.SIMP_TRACE_PANEL, props), _) =>
            val link =
              props match {
-@@ -90,6 +97,8 @@
+@@ -90,6 +95,8 @@
                case Position.Id(id) =>
                  Isabelle.edit_command(snapshot, text_area,
                    props.contains(Markup.PADDING_COMMAND), id, text)
@@ -68,8 +66,8 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
 diff --git a/src/Tools/jEdit/src/isabelle.scala b/src/Tools/jEdit/src/isabelle.scala
---- a/src/Tools/jEdit/src/isabelle.scala	(revision 74445:75d14ac0547e9473279bf6852bd7377700d93ae6)
-+++ b/src/Tools/jEdit/src/isabelle.scala	(revision 74445+:75d14ac0547e+)
+--- a/src/Tools/jEdit/src/isabelle.scala	(revision 74475:8e9f38240c05ecd579421f078c60e152f15b9260)
++++ b/src/Tools/jEdit/src/isabelle.scala	(revision 74475+:8e9f38240c05+)
 @@ -342,6 +342,22 @@
      }
    }

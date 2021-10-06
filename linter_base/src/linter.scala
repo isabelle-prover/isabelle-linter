@@ -138,7 +138,9 @@ object Linter {
 
   object Severity extends Enumeration {
     type Level = Value
-    val Low, High = Value
+    val Info = Value("info")
+    val Warn = Value("warn")
+    val Error = Value("error")
 
     def unapply(s: String): Option[Level] =
       values.find(_.toString == s)

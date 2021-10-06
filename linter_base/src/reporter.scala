@@ -162,11 +162,14 @@ object XML_Lint_Reporter extends Reporter[XML.Body] {
     text(edit.message)
   ) :: Nil
 
-  def position_markup(lint_result: Linter.Lint_Result): XML.Body =
+  def position_markup(lint_result: Linter.Lint_Result): XML.Body = {
+    val pos = Position.Offset(lint_result.range.start + 1) :::
+      Position.End_Offset(lint_result.range.stop) ::: Position.File(lint_result.commands.head.node_name.node)
     text("At ") ::: XML.Elem(
-      Markup(Markup.GOTO_OFFSET, Position.Range(lint_result.range)),
+      Markup(Markup.GOTO_POSITION, pos),
       text(lint_result.line_range.start.print)
     ) :: text(":\n")
+  }
 
   def add_meta(body: XML.Body, lint_result: Linter.Lint_Result): XML.Body = {
     XML.Elem(
