@@ -1,8 +1,0 @@
-## Isabelle/jEdit linter properties
-##
-##:wrap=soft:maxLineLen=100:
-
-#menu actions and dockables
-isabelle-linter.label=Linter panel
-isabelle-linter.title=Linter
-isabelle-linter.dock-position=right

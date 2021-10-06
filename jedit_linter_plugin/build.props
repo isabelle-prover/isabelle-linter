@@ -1,0 +1,12 @@
+title = Isabelle/jEdit Linter Plugin
+module = $JEDIT_SETTINGS/jars/isabelle_jedit_linter.jar
+requirements = \
+  env:ISABELLE_SCALA_JAR \
+  env:JEDIT_JARS \
+  env:ISABELLE_LINTER_JAR
+resources = \
+  dockables.xml \
+  plugin.props
+sources = \
+  dockables.scala \
+  plugin.scala

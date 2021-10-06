@@ -10,10 +10,6 @@ import isabelle.jedit._
 import isabelle.linter._
 import org.gjt.sp.jedit.View
 
-object Linter_Dockable {
-  private val linter = new PIDE_Linter_Variable(Overlay_Lint_Reporter)
-}
-
 class PIDE_Linter_Variable[A](reporter: Reporter[A])
   extends Linter_Variable[A](reporter, true) {
 
@@ -37,14 +33,12 @@ class PIDE_Linter_Variable[A](reporter: Reporter[A])
       }
     }
 
-  def setup_handlers(): Unit =
-    if (get.isEmpty) uninstall_handlers() else install_handlers()
-
-  private def install_handlers(): Unit = {
+  def install_handlers(): Unit = {
     PIDE.session.global_options += main
     PIDE.session.commands_changed += main
   }
-  private def uninstall_handlers(): Unit = {
+
+  def uninstall_handlers(): Unit = {
     PIDE.session.global_options -= main
     PIDE.session.commands_changed -= main
   }
@@ -73,15 +67,27 @@ class Linter_Dockable(view: View, position: String)
       snapshot <- PIDE.maybe_snapshot(view)
       if !snapshot.is_outdated && do_lint
     } {
-      val new_output0 = Linter_Dockable.linter.get match {
+      val new_output0 = Linter_Plugin.instance.flatMap(_.linter.get) match {
         case None => disabled
         case Some(linter) =>
+
+          val current_command =
+            PIDE.editor.current_command(view, snapshot) match {
+              case None          => Command.empty
+              case Some(command) => command
+            }
+
+          val command_lints =
+            linter.report_for_command(snapshot, current_command.id)
 
           lazy val snapshot_lints =
             linter.report_for_snapshot(snapshot)
 
-          if (lint_all && snapshot_lints.nonEmpty) separator ::: snapshot_lints
-          else Nil
+          val all_lints =
+            if (lint_all && snapshot_lints.nonEmpty) separator ::: snapshot_lints
+            else Nil
+
+          command_lints ::: all_lints
       }
       val new_output = if (new_output0.isEmpty) List(XML.Text("No lints")) else new_output0
 
@@ -132,7 +138,7 @@ class Linter_Dockable(view: View, position: String)
   private def linter_=(b: Boolean): Unit = {
     if (linter != b) {
       PIDE.options.bool("linter") = b
-      Linter_Dockable.linter.update(PIDE.options.value)
+      Linter_Plugin.instance.foreach(_.linter.update(PIDE.options.value))
       PIDE.editor.flush_edits(hidden = true)
       PIDE.editor.flush()
     }
@@ -157,19 +163,12 @@ class Linter_Dockable(view: View, position: String)
 
   private val main =
     Session.Consumer[Any](getClass.getName) {
-      case Session.Global_Options(options) =>
-        GUI_Thread.later {
-          Linter_Dockable.linter.update(options)
-        }
-      case _ =>
-        GUI_Thread.later { handle_lint(auto_lint) }
+      case _ => GUI_Thread.later { handle_lint(auto_lint) }
     }
 
   override def init(): Unit = {
     PIDE.session.global_options += main
     PIDE.session.caret_focus += main
-    Linter_Dockable.linter.update(PIDE.options.value)
-    Linter_Dockable.linter.setup_handlers()
   }
 
   override def exit(): Unit = {
