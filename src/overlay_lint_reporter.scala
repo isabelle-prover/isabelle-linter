@@ -1,27 +1,27 @@
 package isabelle.jedit_linter
 
 import isabelle._
-import isabelle.jedit._
-
 import isabelle.linter._
-import isabelle.linter.Linter.Severity
 import isabelle.linter.XML_Lint_Reporter.{add_meta, edit_markup, text}
 
 
-object Overlay_Lint_Reporter extends Reporter[XML.Body] {
+case class Overlay(summary: XML.Body, overlays: Linter_Overlay.State)
 
+object Overlay_Lint_Reporter extends Reporter[Overlay]
+{
   override def report_for_command(lint_report: Linter.Lint_Report,
-    id: Document_ID.Command): XML.Body = XML_Lint_Reporter.report_for_command(lint_report, id)
+    id: Document_ID.Command): Overlay =
+    Overlay(XML_Lint_Reporter.report_for_command(lint_report, id), Map.empty)
 
-  override def report_for_snapshot(lint_report: Linter.Lint_Report): XML.Body =
+  override def report_for_snapshot(lint_report: Linter.Lint_Report): Overlay =
   {
     val commands = lint_report.results
       .flatMap(result => result.commands.map(_ -> result))
       .groupBy(_._1)
 
-    for {
+    val overlays = for {
       (command, results) <- commands.toSeq
-    } {
+    } yield {
       val res = results.map(_._2).flatMap { result =>
         val level = result.severity.toString
         val edit = result.edit match {
@@ -34,10 +34,10 @@ object Overlay_Lint_Reporter extends Reporter[XML.Body] {
 
       val args = "info" :: XML.string_of_tree(XML.elem(Markup.KEYWORD1, text("lints:"))) :: res
 
-      PIDE.editor.insert_overlay(command.command, "print_xml", args)
+      command.command -> args
     }
 
-    XML_Lint_Reporter.report_for_snapshot(lint_report)
+    Overlay(XML_Lint_Reporter.report_for_snapshot(lint_report), overlays.toMap)
   }
 
 }

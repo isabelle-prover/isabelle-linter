@@ -9,11 +9,13 @@ import org.gjt.sp.jedit.{EBMessage, EBPlugin}
 class Linter_Plugin extends EBPlugin
 {
   val linter = new PIDE_Linter_Variable(Overlay_Lint_Reporter)
+  val overlays = new Linter_Overlay.Variable
 
   private def deactivate(): Unit =
   {
     linter.uninstall_handlers()
     Linter_Plugin._instance = None
+    overlays.clear()
   }
 
   override def handleMessage(message: EBMessage): Unit =

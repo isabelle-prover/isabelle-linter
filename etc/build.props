@@ -7,6 +7,7 @@ requirements = \
 sources = \
   src/jedit_linter_plugin.scala \
   src/linter_dockable.scala \
+  src/linter_overlay.scala \
   src/linter_plugin.scala \
   src/overlay_lint_reporter.scala
 services = \

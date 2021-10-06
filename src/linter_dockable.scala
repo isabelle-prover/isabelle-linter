@@ -77,11 +77,14 @@ class Linter_Dockable(view: View, position: String)
               case Some(command) => command
             }
 
-          val command_lints =
+          val Overlay(command_lints, _) =
             linter.report_for_command(snapshot, current_command.id)
 
-          lazy val snapshot_lints =
+
+          val Overlay(snapshot_lints, overlays) =
             linter.report_for_snapshot(snapshot)
+
+          Linter_Plugin.instance.foreach(_.overlays.update(overlays))
 
           val all_lints =
             if (lint_all && snapshot_lints.nonEmpty) separator ::: snapshot_lints
@@ -138,7 +141,10 @@ class Linter_Dockable(view: View, position: String)
   private def linter_=(b: Boolean): Unit = {
     if (linter != b) {
       PIDE.options.bool("linter") = b
-      Linter_Plugin.instance.foreach(_.linter.update(PIDE.options.value))
+      Linter_Plugin.instance.foreach { plugin =>
+        plugin.linter.update(PIDE.options.value)
+        plugin.overlays.clear()
+      }
       PIDE.editor.flush_edits(hidden = true)
       PIDE.editor.flush()
     }
