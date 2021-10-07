@@ -4,6 +4,9 @@ import isabelle._
 
 object Linter_Markup {
 
+  val LINTER_SENDBACK = "linter_sendback"
+  val GOTO_POSITION = "goto_position"
+
   val LINT_RESULT = "lint_result"
 
   val LINT_NAME = "lint_name"

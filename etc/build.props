@@ -5,6 +5,8 @@ requirements = \
   env:JEDIT_JARS \
   env:ISABELLE_LINTER_JAR
 sources = \
+  src/jedit_extension.java \
+  src/jedit_extension.scala \
   src/jedit_linter_plugin.scala \
   src/linter_dockable.scala \
   src/linter_overlay.scala \

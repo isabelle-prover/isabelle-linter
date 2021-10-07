@@ -8,6 +8,8 @@ import org.gjt.sp.jedit.{EBMessage, EBPlugin}
 
 class Linter_Plugin extends EBPlugin
 {
+  JEdit_Extension.init
+
   val linter = new PIDE_Linter_Variable(Overlay_Lint_Reporter)
   val overlays = new Linter_Overlay.Variable
 
