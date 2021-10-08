@@ -31,10 +31,16 @@ object JEdit_Extension
   {
     val ext_elements = Markup.Elements(Linter_Markup.LINTER_SENDBACK, Linter_Markup.GOTO_POSITION)
 
-    val active_elements = classOf[Rendering.type].getDeclaredField("active_elements")
+    val active_elements = Rendering.getClass.getDeclaredField("active_elements")
     remove_final(active_elements).set(Rendering, Rendering.active_elements ++ ext_elements)
-    val background_elements = classOf[Rendering.type].getDeclaredField("background_elements")
+    val background_elements = Rendering.getClass.getDeclaredField("background_elements")
     remove_final(background_elements).set(Rendering, Rendering.background_elements ++ ext_elements)
+  }
+
+  def start(): Unit =
+  {
+    val path = Path.explode("$LINTER_HOME/Linter.thy").canonical.implode
+    PIDE.editor.goto_file(true, JEdit_Lib.jedit_view(), path)
   }
 
   def replace_range(snapshot: Document.Snapshot, text_area: TextArea,
