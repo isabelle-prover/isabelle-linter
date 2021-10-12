@@ -6,7 +6,8 @@ import java.lang.reflect.{Field, Modifier}
 import isabelle._
 import isabelle.jedit._
 import isabelle.linter._
-import org.gjt.sp.jedit.View
+
+import org.gjt.sp.jedit.{Buffer, View, jEdit}
 import org.gjt.sp.jedit.textarea.TextArea
 
 
@@ -37,10 +38,24 @@ object JEdit_Extension
     remove_final(background_elements).set(Rendering, Rendering.background_elements ++ ext_elements)
   }
 
-  def start(): Unit =
+  private val path_ = "$LINTER_HOME/Linter.thy"
+  lazy val path: String = Path.explode(path_).canonical.implode
+
+  def open_linter_thy(view: View): Unit =
   {
-    val path = Path.explode("$LINTER_HOME/Linter.thy").canonical.implode
-    PIDE.editor.goto_file(true, JEdit_Lib.jedit_view(), path)
+    PIDE.editor.goto_file(true, view, path)
+  }
+
+  def on_linter_thy_open(view: View, buffer: Buffer): Unit =
+  {
+    val delay = PIDE.options.seconds("editor_input_delay") +
+      PIDE.options.seconds("editor_generated_input_delay") +
+      PIDE.options.seconds("editor_execution_delay") +
+      PIDE.options.seconds("editor_output_delay")
+
+    Delay.last(delay) {
+      jEdit.closeBuffer(view, buffer)
+    }.invoke()
   }
 
   def replace_range(snapshot: Document.Snapshot, text_area: TextArea,
