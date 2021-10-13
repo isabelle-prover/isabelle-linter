@@ -54,7 +54,9 @@ object JEdit_Extension
       PIDE.options.seconds("editor_output_delay")
 
     Delay.last(delay) {
-      jEdit.closeBuffer(view, buffer)
+      GUI_Thread.now {
+        jEdit.closeBuffer(view, buffer)
+      }
     }.invoke()
   }
 

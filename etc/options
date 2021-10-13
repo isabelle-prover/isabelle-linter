@@ -2,3 +2,15 @@ section "Linter"
 
 public option lint_all : bool = true
   -- "display the lints of the whole document"
+
+public option linter : bool = true
+  -- "enable linter"
+
+public option enabled_bundles : string = "default"
+  -- "enabled lint bundles"
+
+public option enabled_lints : string = ""
+  -- "extra enabled lints"
+
+public option disabled_lints : string = ""
+  -- "disabled lints"

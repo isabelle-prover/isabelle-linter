@@ -2,8 +2,7 @@ title = Isabelle/Linter
 module = $ISABELLE_HOME/lib/classes/isabelle_linter_plugin.jar
 requirements = \
   env:ISABELLE_SCALA_JAR \
-  env:JEDIT_JARS \
-  env:ISABELLE_LINTER_JAR
+  env:JEDIT_JARS
 sources = \
   src/jedit_extension.java \
   src/jedit_extension.scala \
@@ -11,6 +10,17 @@ sources = \
   src/linter_dockable.scala \
   src/linter_overlay.scala \
   src/linter_plugin.scala \
-  src/overlay_lint_reporter.scala
+  src/overlay_lint_reporter.scala \
+  linter_base/src/ast.scala \
+  linter_base/src/lint_store.scala \
+  linter_base/src/linter.scala \
+  linter_base/src/linter_configuration.scala \
+  linter_base/src/linter_interface.scala \
+  linter_base/src/linter_tool.scala \
+  linter_base/src/lints.scala \
+  linter_base/src/markup.scala \
+  linter_base/src/parsers.scala \
+  linter_base/src/reporter.scala \
+  linter_base/src/utils.scala
 services = \
   isabelle.jedit_linter.JEdit_Linter_Plugin
