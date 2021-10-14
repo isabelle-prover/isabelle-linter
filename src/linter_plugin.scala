@@ -1,8 +1,9 @@
 package isabelle.jedit_linter
 
+
 import isabelle.jedit._
 
-import org.gjt.sp.jedit.msg.{BufferUpdate, PluginUpdate, PropertiesChanged}
+import org.gjt.sp.jedit.msg.{PluginUpdate, PropertiesChanged}
 import org.gjt.sp.jedit.{EBMessage, EBPlugin}
 
 
@@ -10,11 +11,10 @@ class Linter_Plugin extends EBPlugin
 {
   JEdit_Extension.init
 
-  val linter = new PIDE_Linter_Variable(Overlay_Lint_Reporter)
+  val linter = new PIDE_Linter_Variable()
   val overlays = new Linter_Overlay.Variable
   private var shutdown = false
   private var started = false
-  private var loaded = false
 
   private def deactivate(): Unit =
   {

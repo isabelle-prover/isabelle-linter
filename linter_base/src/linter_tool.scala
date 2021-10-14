@@ -1,17 +1,21 @@
 package isabelle.linter
 
+
 import isabelle._
-import scala.collection.immutable
+
 import scala.collection.mutable.ListBuffer
+
 
 object Linter_Tool {
 
-  abstract class Lint_CLI[A] {
+  abstract class Lint_CLI {
+    protected type A
+    val reporter: Reporter[A]
 
-    def get_linter_variable: Linter_Variable[A]
+    def get_linter_variable: Linter_Variable
 
     def process_args(
-        linter: Linter_Interface[A],
+        linter: Linter_Interface,
         args: Dump.Args,
         progress: Progress
     ): Unit = ()
@@ -63,20 +67,24 @@ object Linter_Tool {
     }
   }
 
-  class Lint_JSON extends Lint_CLI[JSON.T] {
+  class Lint_JSON extends Lint_CLI {
+    override protected type A = JSON.T
+
+    override val reporter: Reporter[JSON.T] = JSON_Reporter
 
     val reports = new ListBuffer[JSON.T]()
 
-    def get_linter_variable: Linter_Variable[JSON.T] =
-      new Linter_Variable(JSON_Reporter, cache = false)
+    def get_linter_variable: Linter_Variable =
+      new Linter_Variable(cache = false)
 
     override def process_args(
-        linter: Linter_Interface[JSON.T],
+        linter: Linter_Interface,
         args: Dump.Args,
         progress: Progress
     ): Unit = {
       val start_date = Date.now()
-      val report = linter.report_for_snapshot(args.snapshot)
+      val result = linter.lint_report(args.snapshot)
+      val report = reporter.report_for_snapshot(result)
       val end_date = Date.now()
       val timing = end_date.time - start_date.time
       reports += JSON.Object(
@@ -99,18 +107,22 @@ object Linter_Tool {
     }
   }
 
-  object Lint_Text extends Lint_CLI[String] {
+  object Lint_Text extends Lint_CLI {
+    override protected type A = String
 
-    override def get_linter_variable: Linter_Variable[String] =
-      new Linter_Variable(Text_Reporter, cache = false)
+    override val reporter: Reporter[String] = Text_Reporter
+
+    override def get_linter_variable: Linter_Variable =
+      new Linter_Variable(cache = false)
 
     override def process_args(
-        linter: Linter_Interface[String],
+        linter: Linter_Interface,
         args: Dump.Args,
         progress: Progress
     ): Unit = {
       progress.echo(args.print_node + ":")
-      val report = linter.report_for_snapshot(args.snapshot)
+      val result = linter.lint_report(args.snapshot)
+      val report = reporter.report_for_snapshot(result)
       if (report.isEmpty)
         progress.echo("No lints found.")
       else
@@ -119,20 +131,25 @@ object Linter_Tool {
 
   }
 
-  class Lint_XML extends Lint_CLI[XML.Body] {
+  class Lint_XML extends Lint_CLI {
+
+    override protected type A = XML.Body
+
+    override val reporter: Reporter[XML.Body] = XML_Reporter
 
     val reports = new ListBuffer[XML.Tree]()
 
-    override def get_linter_variable: Linter_Variable[XML.Body] =
-      new Linter_Variable(XML_Lint_Reporter, cache = false)
+    override def get_linter_variable: Linter_Variable =
+      new Linter_Variable(cache = false)
 
     override def process_args(
-        linter: Linter_Interface[XML.Body],
+        linter: Linter_Interface,
         args: Dump.Args,
         progress: Progress
     ): Unit = {
       val start_date = Date.now()
-      val report = linter.report_for_snapshot(args.snapshot)
+      val result = linter.lint_report(args.snapshot)
+      val report = reporter.report_for_snapshot(result)
       val end_date = Date.now()
       val timing = end_date.time - start_date.time
       reports += XML.Elem(
@@ -150,7 +167,7 @@ object Linter_Tool {
   }
 
   def list_lints(options: Options, progress: Progress): Unit = {
-    val linter_variable = new Linter_Variable(Text_Reporter)
+    val linter_variable = new Linter_Variable()
     linter_variable.update(options + "linter=true")
 
     val configuration = linter_variable.get.get.configuration

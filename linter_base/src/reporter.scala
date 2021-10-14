@@ -2,9 +2,8 @@ package isabelle.linter
 
 import isabelle._
 
-abstract class Reporter[A] {
+trait Reporter[A] {
   def report_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): A
-
   def report_for_snapshot(lint_report: Linter.Lint_Report): A
 }
 
@@ -34,7 +33,6 @@ object JSON_Reporter extends Reporter[JSON.T] {
       })
       .getOrElse(null)
   )
-
 }
 
 object Text_Reporter extends Reporter[String] {
@@ -99,7 +97,7 @@ object Text_Reporter extends Reporter[String] {
   }
 }
 
-object XML_Lint_Reporter extends Reporter[XML.Body] {
+object XML_Reporter extends Reporter[XML.Body] {
 
   def report_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): XML.Body = {
     val xml = report_lints(lint_report.command_lints(id))
@@ -189,5 +187,4 @@ object XML_Lint_Reporter extends Reporter[XML.Body] {
 
   def block(inner: XML.Body): XML.Body =
     XML.elem(Markup.Block.name, inner) :: Nil
-
 }

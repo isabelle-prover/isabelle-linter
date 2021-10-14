@@ -10,7 +10,7 @@ sources = \
   src/linter_dockable.scala \
   src/linter_overlay.scala \
   src/linter_plugin.scala \
-  src/overlay_lint_reporter.scala \
+  src/overlay_reporter.scala \
   linter_base/src/ast.scala \
   linter_base/src/lint_store.scala \
   linter_base/src/linter.scala \
