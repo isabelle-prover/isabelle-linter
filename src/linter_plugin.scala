@@ -28,7 +28,7 @@ class Linter_Plugin extends EBPlugin
   {
     if (!shutdown && !started && PIDE._plugin != null && PIDE.session.is_ready) {
       started = true
-      JEdit_Extension.open_linter_thy(JEdit_Lib.jedit_view())
+      JEdit_Extension.load_linter_thy()
     }
 
     message match {
@@ -40,12 +40,6 @@ class Linter_Plugin extends EBPlugin
         } else if (Linter_Plugin.instance.isDefined) {
           deactivate()
         }
-
-      case msg: BufferUpdate if msg.getWhat == BufferUpdate.LOADED
-        && msg.getBuffer.getPath == JEdit_Extension.path
-        && !loaded =>
-        loaded = true
-        JEdit_Extension.on_linter_thy_open(msg.getView, msg.getBuffer)
 
       case _: PropertiesChanged =>
         if (PIDE._plugin != null) {

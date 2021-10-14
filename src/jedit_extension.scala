@@ -7,7 +7,7 @@ import isabelle._
 import isabelle.jedit._
 import isabelle.linter._
 
-import org.gjt.sp.jedit.{Buffer, View, jEdit}
+import org.gjt.sp.jedit.View
 import org.gjt.sp.jedit.textarea.TextArea
 
 
@@ -38,26 +38,16 @@ object JEdit_Extension
     remove_final(background_elements).set(Rendering, Rendering.background_elements ++ ext_elements)
   }
 
-  private val path_ = "$LINTER_HOME/Linter.thy"
-  lazy val path: String = Path.explode(path_).canonical.implode
-
-  def open_linter_thy(view: View): Unit =
+  def load_linter_thy(): Unit =
   {
-    PIDE.editor.goto_file(true, view, path)
-  }
+    val path = Path.explode("$LINTER_HOME/Linter.thy").canonical
 
-  def on_linter_thy_open(view: View, buffer: Buffer): Unit =
-  {
-    val delay = PIDE.options.seconds("editor_input_delay") +
-      PIDE.options.seconds("editor_generated_input_delay") +
-      PIDE.options.seconds("editor_execution_delay") +
-      PIDE.options.seconds("editor_output_delay")
+    val node = path.implode
+    val theory = PIDE.resources.theory_name(Sessions.DRAFT, Thy_Header.theory_name(node))
+    val node_name = Document.Node.Name(node, path.dir.implode, theory)
 
-    Delay.last(delay) {
-      GUI_Thread.now {
-        jEdit.closeBuffer(view, buffer)
-      }
-    }.invoke()
+    Document_Model.provide_files(PIDE.session, List(node_name -> File.read(path)))
+    Document_Model.node_required(node_name, set = true)
   }
 
   def replace_range(snapshot: Document.Snapshot, text_area: TextArea,
