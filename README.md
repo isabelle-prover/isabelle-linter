@@ -2,9 +2,18 @@
 Linter for Isabelle, with jEdit integration.
 
 ## Setup
+Requires Isabelle >= `2021-1-RC0`.
 The linter can be used as a stand-alone tool or as a jEdit component.
-Simply add this directory as component (`isabelle components -u <DIR>`).
-For stand-alone usage, add the component `<REPO_DIR>/linter_base` **instead**.
+
+Install with: `isabelle components -u <DIR>`.
+
+For stand-alone (cli) tool only, add the component `<REPO_DIR>/linter_base` **instead**.
 
 ## Usage
-Either jEdit panel or `isabelle lint`.
+Automatically starts with jEdit.
+Configuration can be done via the `Linter` panel and/or Isabelle [options](etc/options).
+
+CLI usage: `isabelle lint -?`.
+
+## Lints
+TODO: Generate list of lints.

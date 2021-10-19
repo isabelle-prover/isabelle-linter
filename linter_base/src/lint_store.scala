@@ -102,7 +102,6 @@ object Lint_Store {
       "default",
       Set(
         Apply_Isar_Switch.name,
-        Use_By.name,
         Unrestricted_Auto.name,
         Low_Level_Apply_Chain.name,
         Axiomatization_With_Where.name,
