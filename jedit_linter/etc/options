@@ -1,0 +1,4 @@
+section "Linter"
+
+public option lint_all : bool = true
+  -- "display the lints of the whole document"

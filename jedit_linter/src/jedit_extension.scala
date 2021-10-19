@@ -40,7 +40,7 @@ object JEdit_Extension
 
   def load_linter_thy(): Unit =
   {
-    val path = Path.explode("$LINTER_HOME/Linter.thy").canonical
+    val path = Path.explode("$JEDIT_LINTER_HOME/Linter.thy").canonical
 
     val node = path.implode
     val theory = PIDE.resources.theory_name(Sessions.DRAFT, Thy_Header.theory_name(node))

@@ -1,4 +1,1 @@
 # -*- shell-script -*- :mode=shellscript:
-
-LINTER_HOME="$COMPONENT"
-JEDIT_JAVA_OPTIONS="$JEDIT_JAVA_OPTIONS --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
