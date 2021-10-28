@@ -13,7 +13,7 @@ plugin.isabelle.jedit_linter_plugin.Plugin.activate=startup
 plugin.isabelle.jedit_linter_plugin.Plugin.usePluginHome=false
 
 #dependencies
-plugin.isabelle.jedit_linter_plugin.Plugin.depend.0=plugin isabelle.jedit_main.Plugin 11.3
+plugin.isabelle.jedit_linter_plugin.Plugin.depend.0=plugin isabelle.jedit_main.Plugin 11.2
 
 #menu actions and dockables
 plugin.isabelle.jedit_linter_plugin.Plugin.menu.label=Isabelle Linter
