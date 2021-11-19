@@ -58,10 +58,9 @@ object Linter {
       tokens,
       start_offset,
       {
-        case (token, offset) => {
+        case (token, offset) =>
           val rtoken = RToken(token, offset)
           (rtoken, rtoken.range.stop)
-        }
       }
     )
 

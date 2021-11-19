@@ -13,7 +13,7 @@ object Apply_Isar_Switch extends Proper_Commands_Lint {
   @tailrec
   def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
     commands match {
-      case Parsed_Command("apply") :: (proof @ Parsed_Command("proof")) :: next => {
+      case Parsed_Command("apply") :: (proof @ Parsed_Command("proof")) :: next =>
         val new_report = add_result(
           "Do not switch between apply-style and ISAR proofs.",
           proof.range,
@@ -22,7 +22,6 @@ object Apply_Isar_Switch extends Proper_Commands_Lint {
           report
         )
         lint_proper(next, new_report)
-      }
       case _ :: next => lint_proper(next, report)
       case Nil       => report
     }
@@ -47,11 +46,11 @@ object Use_By extends Proper_Commands_Lint with TokenParsers {
           method1 <- tryTransform(removeApply, apply1, true)
           method2 <- tryTransform(removeApply, apply2, true)
         } yield s"by $method1 $method2"
-      case apply :: done :: Nil if (!has_by) =>
+      case apply :: done :: Nil if !has_by =>
         for {
           method <- tryTransform(removeApply, apply, true)
         } yield s"by $method"
-      case apply :: by :: Nil if (has_by) =>
+      case apply :: by :: Nil if has_by =>
         for {
           method1 <- tryTransform(removeApply, apply, true)
           method2 <- tryTransform(removeBy, by, true)
@@ -99,13 +98,13 @@ object Use_By extends Proper_Commands_Lint with TokenParsers {
       case first
           :: (apply @ Parsed_Command("apply"))
           :: (done @ Parsed_Command("done"))
-          :: next if (check_first_command(first) && !Complex_Method.is_complex(apply)) =>
+          :: next if check_first_command(first) && !Complex_Method.is_complex(apply) =>
         lint_proper(next, report_lint(apply :: done :: Nil, report))
       case first
           :: (apply @ Parsed_Command("apply"))
           :: (by @ Parsed_Command("by"))
           :: next
-          if (check_first_command(first) && !Complex_Method.is_complex(apply) && single_by(by)) =>
+          if check_first_command(first) && !Complex_Method.is_complex(apply) && single_by(by) =>
         lint_proper(next, report_lint(apply :: by :: Nil, report, has_by = true))
       case _ :: next => lint_proper(next, report)
       case Nil       => report
@@ -269,7 +268,7 @@ object Use_Isar extends Single_Command_Lint {
   val severity: Severity.Level = Severity.Info
 
   def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] = command match {
-    case (c @ Parsed_Command("apply")) =>
+    case c @ Parsed_Command("apply") =>
       report("Use Isar instead of apply-scripts.", c.range, None)
     case _ => None
   }
@@ -283,7 +282,7 @@ object Axiomatization_With_Where extends Single_Command_Lint {
   def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] = command.tokens match {
     case RToken(Token.Kind.COMMAND, "axiomatization", range) :: next =>
       next.dropWhile(_.info.source != "where") match {
-        case xs @ (_ :: _) =>
+        case xs @ _ :: _ =>
           report(
             """Do not use axiomatization with a where clause.""",
             Text.Range(xs.head.range.start, xs.last.range.stop),
