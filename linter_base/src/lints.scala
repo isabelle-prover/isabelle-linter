@@ -161,9 +161,23 @@ object Low_Level_Apply_Chain extends Proper_Commands_Lint {
   val name: String = "low_level_apply_chain"
   val severity: Severity.Level = Severity.Info
 
+  val LOW_LEVEL_RULES = List(
+    "erule",
+    "rule",
+    "simp",
+    "clarsimp",
+    "rule_tac",
+    "frule",
+    "erule",
+    "drule",
+    "subst",
+    "rewrite",
+    "unfold"
+  )
+
   private def is_low_level_method(method: Method): Boolean = method match {
     case Simple_Method(name, modifiers, args) =>
-      List("erule", "rule", "simp", "clarsimp", "rule_tac").contains(name.info.content)
+      LOW_LEVEL_RULES.contains(name.info.content)
     case _ => false
   }
 
