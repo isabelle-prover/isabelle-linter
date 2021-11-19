@@ -215,7 +215,7 @@ object Global_Attribute_Changes extends Proper_Commands_Lint with TokenParsers {
     attrs.exists(attr => attr == "simp" || attr == "simpadd")
 
   private def has_simp_del(attrs: List[String]): Boolean =
-    attrs.exists(_ == "simpdel") // Whitespaces are ignored
+    attrs.contains("simpdel") // Whitespaces are ignored
 
   private def proces_declaration(command: Parsed_Command)(
       report_simpset: (Lint_Report, Set[String]),
@@ -431,7 +431,7 @@ object Short_Name extends Parser_Lint {
   val severity: Severity.Level = Severity.Info
 
   override def parser(report: Reporter): Parser[Some[Lint_Result]] =
-    pCommand("fun", "definition") ~> elem("ident", _.info.content.size < 2) ^^ {
+    pCommand("fun", "definition") ~> elem("ident", _.info.content.length < 2) ^^ {
       case Text.Info(range, token) =>
         report(s"""Name "${token.content}" is too short.""", range, None)
     }
@@ -557,9 +557,9 @@ object Complex_Method extends AST_Lint {
   val message: String = "Avoid complex methods."
 
   private def has_modifiers(method: Method): Boolean = method match {
-    case Simple_Method(_, modifiers, _) => !modifiers.isEmpty
+    case Simple_Method(_, modifiers, _) => modifiers.nonEmpty
     case Combined_Method(left, _, right, modifiers) =>
-      !modifiers.isEmpty || has_modifiers(left.info) || has_modifiers(right.info)
+      modifiers.nonEmpty || has_modifiers(left.info) || has_modifiers(right.info)
   }
 
   private def has_complex_modifiers(method: Method): Boolean = method match {

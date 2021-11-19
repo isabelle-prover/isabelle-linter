@@ -28,10 +28,9 @@ object JSON_Reporter extends Reporter[JSON.T] {
           "startOffset" -> edit.range.start,
           "stopOffset" -> edit.range.stop,
           "replacement" -> edit.replacement,
-          "msg" -> edit.msg.getOrElse(null)
+          "msg" -> edit.msg.orNull
         )
-      })
-      .getOrElse(null)
+      }).orNull
   )
 }
 
@@ -116,14 +115,13 @@ object XML_Reporter extends Reporter[XML.Body] {
       compact: Boolean = true
   ): XML.Body =
     lint_results.zipWithIndex
-      .map(ri =>
+      .flatMap(ri =>
         report_lint(
           ri._1,
           ri._2,
           compact = compact
         )
       )
-      .flatten
 
   private def report_lint(
       lint_result: Linter.Lint_Result,
