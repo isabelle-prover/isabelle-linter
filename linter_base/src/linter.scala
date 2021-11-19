@@ -2,12 +2,14 @@ package isabelle.linter
 
 import isabelle._
 
-object Linter {
+object Linter
+{
 
   def lint(
-      snapshot: Document.Snapshot,
-      configuration: Linter_Configuration
-  ): Lint_Report = {
+    snapshot: Document.Snapshot,
+    configuration: Linter_Configuration
+  ): Lint_Report =
+  {
 
     val parsed_commands = snapshot.node
       .command_iterator()
@@ -19,7 +21,8 @@ object Linter {
     )
   }
 
-  object RToken {
+  object RToken
+  {
 
     def unapply(r: Text.Info[Token]): Option[(Token.Kind.Value, String, Text.Range)] =
       Some(r.info.kind, r.info.source, r.range)
@@ -30,18 +33,20 @@ object Linter {
 
   def list_range(ranges: List[Text.Range]): Text.Range = ranges match {
     case _ :: _ => Text.Range(ranges.head.start, ranges.last.stop)
-    case Nil    => Text.Range.offside
+    case Nil => Text.Range.offside
   }
 
-  object Parsed_Command {
+  object Parsed_Command
+  {
     def unapply(command: Parsed_Command): Option[String] = Some(command.kind)
   }
 
   case class Parsed_Command(
-      command: Command,
-      offset: Text.Offset,
-      snapshot: Document.Snapshot
-  ) {
+    command: Command,
+    offset: Text.Offset,
+    snapshot: Document.Snapshot
+  )
+  {
     val node_name: Document.Node.Name = snapshot.node_name
 
     val kind: String = command.span.kind.toString()
@@ -49,8 +54,8 @@ object Linter {
     val range: Text.Range = command.range + offset
 
     def generate_positions(
-        tokens: List[Token],
-        start_offset: Text.Offset
+      tokens: List[Token],
+      start_offset: Text.Offset
     ): List[Text.Info[Token]] = Utils.mapAccumL[Token, Text.Offset, Text.Info[Token]](
       tokens,
       start_offset,
@@ -75,13 +80,14 @@ object Linter {
   }
 
   case class Lint_Result(
-      lint_name: String,
-      message: String,
-      range: Text.Range,
-      edit: Option[Edit],
-      severity: Severity.Value,
-      commands: List[Parsed_Command]
-  ) {
+    lint_name: String,
+    message: String,
+    range: Text.Range,
+    edit: Option[Edit],
+    severity: Severity.Value,
+    commands: List[Parsed_Command]
+  )
+  {
     if (commands.isEmpty)
       error("Expected at least one command.")
     val node = commands.head.snapshot.node
@@ -91,23 +97,26 @@ object Linter {
 
   }
 
-  object Lint_Result {
+  object Lint_Result
+  {
 
     def apply(
-        lint_name: String,
-        message: String,
-        range: Text.Range,
-        edit: Option[Edit],
-        severity: Severity.Value,
-        command: Parsed_Command
+      lint_name: String,
+      message: String,
+      range: Text.Range,
+      edit: Option[Edit],
+      severity: Severity.Value,
+      command: Parsed_Command
     ): Lint_Result = Lint_Result(lint_name, message, range, edit, severity, command :: Nil)
   }
 
-  object Lint_Report {
+  object Lint_Report
+  {
     val empty: Lint_Report = Lint_Report(Nil)
   }
 
-  case class Lint_Report(_results: List[Lint_Result]) {
+  case class Lint_Report(_results: List[Lint_Result])
+  {
 
     def add_result(result: Lint_Result): Lint_Report = Lint_Report(result :: _results)
 
@@ -126,13 +135,15 @@ object Linter {
         .sortBy(_.info.id) // Lowest severity first
   }
 
-  case class Edit(range: Text.Range, replacement: String, msg: Option[String] = None) {
+  case class Edit(range: Text.Range, replacement: String, msg: Option[String] = None)
+  {
     val message: String = msg.getOrElse(replacement)
   }
 
   type Reporter = (String, Text.Range, Option[Edit]) => Some[Lint_Result]
 
-  object Severity extends Enumeration {
+  object Severity extends Enumeration
+  {
     type Level = Value
     val Info = Value("info")
     val Warn = Value("warn")
@@ -142,7 +153,8 @@ object Linter {
       values.find(_.toString == s)
   }
 
-  sealed trait Lint {
+  sealed trait Lint
+  {
     val name: String
     val severity: Severity.Level
 
@@ -150,18 +162,19 @@ object Linter {
 
   }
 
-  abstract class Proper_Commands_Lint extends Lint {
+  abstract class Proper_Commands_Lint extends Lint
+  {
     def lint(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
       lint_proper(commands.filter(_.command.is_proper), report)
 
     def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report
 
     def add_result(
-        message: String,
-        range: Text.Range,
-        edit: Option[Edit],
-        command: Parsed_Command,
-        report: Lint_Report
+      message: String,
+      range: Text.Range,
+      edit: Option[Edit],
+      command: Parsed_Command,
+      report: Lint_Report
     ): Lint_Report =
       report.add_result(
         Lint_Result(
@@ -175,11 +188,11 @@ object Linter {
       )
 
     def add_result(
-        message: String,
-        range: Text.Range,
-        edit: Option[Edit],
-        commands: List[Parsed_Command],
-        report: Lint_Report
+      message: String,
+      range: Text.Range,
+      edit: Option[Edit],
+      commands: List[Parsed_Command],
+      report: Lint_Report
     ): Lint_Report =
       report.add_result(
         Lint_Result(
@@ -193,7 +206,8 @@ object Linter {
       )
   }
 
-  abstract class Single_Command_Lint extends Lint {
+  abstract class Single_Command_Lint extends Lint
+  {
 
     def lint(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
       commands
@@ -209,25 +223,27 @@ object Linter {
     def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result]
   }
 
-  abstract class Parser_Lint extends Single_Command_Lint with TokenParsers {
+  abstract class Parser_Lint extends Single_Command_Lint with TokenParsers
+  {
 
     def parser(report: Reporter): Parser[Some[Lint_Result]]
 
     def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] =
       parse(parser(report), command.tokens) match {
         case Success(result, _) => result
-        case _                  => None
+        case _ => None
       }
   }
 
-  abstract class AST_Lint extends Single_Command_Lint {
+  abstract class AST_Lint extends Single_Command_Lint
+  {
 
     def lint_method(method: Text.Info[Method], report: Reporter): Option[Lint_Result] = None
 
     def lint_by(
-        method1: Text.Info[Method],
-        method2: Option[Text.Info[Method]],
-        report: Reporter
+      method1: Text.Info[Method],
+      method2: Option[Text.Info[Method]],
+      report: Reporter
     ): Option[Lint_Result] =
       lint_method(method1, report) orElse method2.flatMap(lint_method(_, report))
 
@@ -239,18 +255,18 @@ object Linter {
 
     def lint_proof(proof: Text.Info[Proof], report: Reporter): Option[Lint_Result] =
       proof.info match {
-        case Apply(method)        => lint_apply(method, report)
-        case Isar_Proof(method)   => lint_isar_proof(method, report)
+        case Apply(method) => lint_apply(method, report)
+        case Isar_Proof(method) => lint_isar_proof(method, report)
         case By(method1, method2) => lint_by(method1, method2, report)
       }
 
     def lint_ast_node(
-        elem: Text.Info[ASTNode],
-        report: Reporter
+      elem: Text.Info[ASTNode],
+      report: Reporter
     ): Option[Lint_Result] =
       elem.info match {
         case p: Proof => lint_proof(Text.Info(elem.range, p), report)
-        case _        => None
+        case _ => None
       }
 
     def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] =

@@ -2,7 +2,8 @@ package isabelle.linter
 
 import isabelle._
 
-object Linter_Markup {
+object Linter_Markup
+{
 
   val LINTER_SENDBACK = "linter_sendback"
   val GOTO_POSITION = "goto_position"
@@ -16,14 +17,16 @@ object Linter_Markup {
   val Lint_Message = new Properties.String(LINT_MESSAGE)
 
   val LINT_SEVERITY = "lint_severity"
-  object Lint_Severity {
+
+  object Lint_Severity
+  {
     def apply(severity: Linter.Severity.Level): Properties.T =
       List((LINT_SEVERITY, severity.toString))
 
     def unapply(props: Properties.T): Option[Linter.Severity.Level] =
       props.find(_._1 == LINT_SEVERITY) match {
         case Some(p) => Linter.Severity.unapply(p._2)
-        case _       => None
+        case _ => None
       }
 
   }
@@ -36,7 +39,8 @@ object Linter_Markup {
 
   val LINT_COMMANDS = "lint_commands"
 
-  object Lint_Commands {
+  object Lint_Commands
+  {
 
     def apply(commands: List[Document_ID.Command]): Properties.T =
       List((LINT_COMMANDS, commands.mkString(",")))
@@ -44,8 +48,12 @@ object Linter_Markup {
     def unapply(props: Properties.T): Option[List[Document_ID.Command]] =
       props.find(_._1 == LINT_COMMANDS) match {
         case Some(p) =>
-          try { Some(space_explode(',', p._2).map(Value.Long.parse)) }
-          catch { case ERROR(_) => None }
+          try {
+            Some(space_explode(',', p._2).map(Value.Long.parse))
+          }
+          catch {
+            case ERROR(_) => None
+          }
         case _ => None
       }
   }

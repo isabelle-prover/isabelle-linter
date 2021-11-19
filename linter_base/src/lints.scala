@@ -5,7 +5,8 @@ import Linter._
 import isabelle._
 import scala.annotation.tailrec
 
-object Apply_Isar_Switch extends Proper_Commands_Lint {
+object Apply_Isar_Switch extends Proper_Commands_Lint
+{
 
   val name = "apply_isar_switch"
   val severity: Severity.Level = Severity.Warn
@@ -13,7 +14,7 @@ object Apply_Isar_Switch extends Proper_Commands_Lint {
   @tailrec
   def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
     commands match {
-      case Parsed_Command("apply") :: (proof @ Parsed_Command("proof")) :: next =>
+      case Parsed_Command("apply") :: (proof@Parsed_Command("proof")) :: next =>
         val new_report = add_result(
           "Do not switch between apply-style and ISAR proofs.",
           proof.range,
@@ -23,11 +24,12 @@ object Apply_Isar_Switch extends Proper_Commands_Lint {
         )
         lint_proper(next, new_report)
       case _ :: next => lint_proper(next, report)
-      case Nil       => report
+      case Nil => report
     }
 }
 
-object Use_By extends Proper_Commands_Lint with TokenParsers {
+object Use_By extends Proper_Commands_Lint with TokenParsers
+{
 
   val name: String = "use_by"
   val severity: Severity.Level = Severity.Info
@@ -37,8 +39,8 @@ object Use_By extends Proper_Commands_Lint with TokenParsers {
   private def removeBy: Parser[String] = (pCommand("by") ~ pSpace.?) ~> pAny.* ^^ mkString
 
   private def gen_replacement(
-      apply_script: List[Parsed_Command],
-      has_by: Boolean = false
+    apply_script: List[Parsed_Command],
+    has_by: Boolean = false
   ): Option[String] =
     apply_script match {
       case apply1 :: apply2 :: _ :: Nil =>
@@ -59,10 +61,11 @@ object Use_By extends Proper_Commands_Lint with TokenParsers {
     }
 
   private def report_lint(
-      apply_script: List[Parsed_Command],
-      report: Lint_Report,
-      has_by: Boolean = false
-  ): Lint_Report = {
+    apply_script: List[Parsed_Command],
+    report: Lint_Report,
+    has_by: Boolean = false
+  ): Lint_Report =
+  {
     val new_report = for {
       replacement <- gen_replacement(apply_script, has_by)
     } yield add_result(
@@ -81,38 +84,39 @@ object Use_By extends Proper_Commands_Lint with TokenParsers {
   private def single_by(command: Parsed_Command): Boolean =
     command.ast_node.info match {
       case By(_, None) => true
-      case _           => false
+      case _ => false
     }
 
   @tailrec
   def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
     commands match {
       case first
-          :: (apply1 @ Parsed_Command("apply"))
-          :: (apply2 @ Parsed_Command("apply"))
-          :: (done @ Parsed_Command("done"))
-          :: next
-          if (check_first_command(first)
-            && !(Complex_Method.is_complex(apply1) || Complex_Method.is_complex(apply2))) =>
+        :: (apply1@Parsed_Command("apply"))
+        :: (apply2@Parsed_Command("apply"))
+        :: (done@Parsed_Command("done"))
+        :: next
+        if (check_first_command(first)
+          && !(Complex_Method.is_complex(apply1) || Complex_Method.is_complex(apply2))) =>
         lint_proper(next, report_lint(apply1 :: apply2 :: done :: Nil, report))
       case first
-          :: (apply @ Parsed_Command("apply"))
-          :: (done @ Parsed_Command("done"))
-          :: next if check_first_command(first) && !Complex_Method.is_complex(apply) =>
+        :: (apply@Parsed_Command("apply"))
+        :: (done@Parsed_Command("done"))
+        :: next if check_first_command(first) && !Complex_Method.is_complex(apply) =>
         lint_proper(next, report_lint(apply :: done :: Nil, report))
       case first
-          :: (apply @ Parsed_Command("apply"))
-          :: (by @ Parsed_Command("by"))
-          :: next
-          if check_first_command(first) && !Complex_Method.is_complex(apply) && single_by(by) =>
+        :: (apply@Parsed_Command("apply"))
+        :: (by@Parsed_Command("by"))
+        :: next
+        if check_first_command(first) && !Complex_Method.is_complex(apply) && single_by(by) =>
         lint_proper(next, report_lint(apply :: by :: Nil, report, has_by = true))
       case _ :: next => lint_proper(next, report)
-      case Nil       => report
+      case Nil => report
     }
 
 }
 
-object Unrestricted_Auto extends Proper_Commands_Lint {
+object Unrestricted_Auto extends Proper_Commands_Lint
+{
   val name: String = "unrestricted_auto"
   val severity: Severity.Level = Severity.Error
 
@@ -132,7 +136,7 @@ object Unrestricted_Auto extends Proper_Commands_Lint {
 
   private def is_unrestricted_auto(element: ASTNode): Boolean = element match {
     case Apply(method) => is_unrestricted_auto__method(method.info)
-    case _             => false
+    case _ => false
   }
 
   private def report_lint(apply: Parsed_Command, report: Lint_Report): Lint_Report =
@@ -147,15 +151,16 @@ object Unrestricted_Auto extends Proper_Commands_Lint {
   @tailrec
   def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
     commands match {
-      case (apply @ Parsed_Command("apply")) :: next_command :: next
-          if !is_terminal(next_command) && is_unrestricted_auto(apply.ast_node.info) =>
+      case (apply@Parsed_Command("apply")) :: next_command :: next
+        if !is_terminal(next_command) && is_unrestricted_auto(apply.ast_node.info) =>
         lint_proper(next_command :: next, report_lint(apply, report))
       case _ :: next => lint_proper(next, report)
-      case Nil       => report
+      case Nil => report
     }
 }
 
-object Low_Level_Apply_Chain extends Proper_Commands_Lint {
+object Low_Level_Apply_Chain extends Proper_Commands_Lint
+{
 
   val name: String = "low_level_apply_chain"
   val severity: Severity.Level = Severity.Info
@@ -168,11 +173,12 @@ object Low_Level_Apply_Chain extends Proper_Commands_Lint {
 
   private def is_low_level_apply(command: Parsed_Command): Boolean = command.ast_node.info match {
     case Apply(method) => is_low_level_method(method.info)
-    case _             => false
+    case _ => false
   }
 
   @tailrec
-  def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report = {
+  def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
+  {
     val (low_level_commands, rest) =
       commands.dropWhile(!is_low_level_apply(_)).span(is_low_level_apply)
 
@@ -194,7 +200,8 @@ object Low_Level_Apply_Chain extends Proper_Commands_Lint {
   }
 }
 
-object Global_Attribute_Changes extends Proper_Commands_Lint with TokenParsers {
+object Global_Attribute_Changes extends Proper_Commands_Lint with TokenParsers
+{
 
   val name: String = "global_attribute_changes"
   val severity: Severity.Level = Severity.Info
@@ -207,8 +214,12 @@ object Global_Attribute_Changes extends Proper_Commands_Lint with TokenParsers {
 
   private def declare_command: Parser[List[Declaration]] =
     pCommand("declare") ~> chainl1[List[Declaration]](
-      declaration ^^ { List(_) },
-      pKeyword("and") ^^^ { _ ::: _ }
+      declaration ^^ {
+        List(_)
+      },
+      pKeyword("and") ^^^ {
+        _ ::: _
+      }
     )
 
   private def has_simp(attrs: List[String]): Boolean =
@@ -218,9 +229,10 @@ object Global_Attribute_Changes extends Proper_Commands_Lint with TokenParsers {
     attrs.contains("simpdel") // Whitespaces are ignored
 
   private def proces_declaration(command: Parsed_Command)(
-      report_simpset: (Lint_Report, Set[String]),
-      declaration: Declaration
-  ): (Lint_Report, Set[String]) = {
+    report_simpset: (Lint_Report, Set[String]),
+    declaration: Declaration
+  ): (Lint_Report, Set[String]) =
+  {
     val (ident, attrs) = declaration
     val (report, simpset) = report_simpset
     val new_report =
@@ -242,11 +254,11 @@ object Global_Attribute_Changes extends Proper_Commands_Lint with TokenParsers {
 
   @tailrec
   private def go(
-      commands: List[Parsed_Command],
-      report: Lint_Report,
-      simpset: Set[String]
+    commands: List[Parsed_Command],
+    report: Lint_Report,
+    simpset: Set[String]
   ): Lint_Report = commands match {
-    case (head @ Parsed_Command("declare")) :: next =>
+    case (head@Parsed_Command("declare")) :: next =>
       tryTransform(declare_command, head) match {
         case Some(decls) =>
           val (new_report, new_simpset) =
@@ -256,26 +268,28 @@ object Global_Attribute_Changes extends Proper_Commands_Lint with TokenParsers {
       }
 
     case _ :: next => go(next, report, simpset)
-    case Nil       => report
+    case Nil => report
   }
 
   def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
     go(commands, report, Set.empty)
 }
 
-object Use_Isar extends Single_Command_Lint {
+object Use_Isar extends Single_Command_Lint
+{
 
   val name: String = "use_isar"
   val severity: Severity.Level = Severity.Info
 
   def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] = command match {
-    case c @ Parsed_Command("apply") =>
+    case c@Parsed_Command("apply") =>
       report("Use Isar instead of apply-scripts.", c.range, None)
     case _ => None
   }
 }
 
-object Axiomatization_With_Where extends Single_Command_Lint {
+object Axiomatization_With_Where extends Single_Command_Lint
+{
 
   val name: String = "axiomatization_with_where"
   val severity: Severity.Level = Severity.Error
@@ -283,7 +297,7 @@ object Axiomatization_With_Where extends Single_Command_Lint {
   def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] = command.tokens match {
     case RToken(Token.Kind.COMMAND, "axiomatization", _) :: next =>
       next.dropWhile(_.info.source != "where") match {
-        case xs @ _ :: _ =>
+        case xs@_ :: _ =>
           report(
             """Do not use axiomatization with a where clause.""",
             Text.Range(xs.head.range.start, xs.last.range.stop),
@@ -296,11 +310,12 @@ object Axiomatization_With_Where extends Single_Command_Lint {
 }
 
 abstract class Illegal_Command_Lint(
-    message: String,
-    lint_name: String,
-    illegal_commands: List[String],
-    lint_severity: Severity.Level
-) extends Single_Command_Lint {
+  message: String,
+  lint_name: String,
+  illegal_commands: List[String],
+  lint_severity: Severity.Level
+) extends Single_Command_Lint
+{
 
   val name: String = lint_name
   val severity: Severity.Level = lint_severity
@@ -312,120 +327,121 @@ abstract class Illegal_Command_Lint(
 }
 
 object Unfinished_Proof
-    extends Illegal_Command_Lint(
-      "Consider finishing the proof.",
-      "unfinished_proof",
-      List("sorry", "oops", "\\<proof>"),
-      Severity.Error
-    )
+  extends Illegal_Command_Lint(
+    "Consider finishing the proof.",
+    "unfinished_proof",
+    List("sorry", "oops", "\\<proof>"),
+    Severity.Error
+  )
 
 object Proof_Finder
-    extends Illegal_Command_Lint(
-      "Remove proof finder command.",
-      "proof_finder",
-      List(
-        "sledgehammer",
-        "solve_direct",
-        "try",
-        "try0"
-      ),
-      Severity.Error
-    )
+  extends Illegal_Command_Lint(
+    "Remove proof finder command.",
+    "proof_finder",
+    List(
+      "sledgehammer",
+      "solve_direct",
+      "try",
+      "try0"
+    ),
+    Severity.Error
+  )
 
 object Counter_Example_Finder
-    extends Illegal_Command_Lint(
-      "Remove counter-example finder command.",
-      "counter_example_finder",
-      List(
-        "nitpick",
-        "nunchaku",
-        "quickcheck"
-      ),
-      Severity.Error
-    )
+  extends Illegal_Command_Lint(
+    "Remove counter-example finder command.",
+    "counter_example_finder",
+    List(
+      "nitpick",
+      "nunchaku",
+      "quickcheck"
+    ),
+    Severity.Error
+  )
 
 object Bad_Style_Command
-    extends Illegal_Command_Lint(
-      "Bad style command.",
-      "bad_style_command",
-      List("back", "apply_end"),
-      Severity.Warn
-    )
+  extends Illegal_Command_Lint(
+    "Bad style command.",
+    "bad_style_command",
+    List("back", "apply_end"),
+    Severity.Warn
+  )
 
 object Diagnostic_Command
-    extends Illegal_Command_Lint(
-      "Remove interactive diagnostic command",
-      "diagnostic_command",
-      List(
-        "ML_val",
-        "class_deps",
-        "code_deps",
-        "code_thms",
-        "find_consts",
-        "find_theorems",
-        "find_unused_assms",
-        "full_prf",
-        "help",
-        "locale_deps",
-        "prf",
-        "print_ML_antiquotations",
-        "print_abbrevs",
-        "print_antiquotations",
-        "print_attributes",
-        "print_bnfs",
-        "print_bundles",
-        "print_case_translations",
-        "print_cases",
-        "print_claset",
-        "print_classes",
-        "print_codeproc",
-        "print_codesetup",
-        "print_coercions",
-        "print_commands",
-        "print_context",
-        "print_definitions",
-        "print_defn_rules",
-        "print_facts",
-        "print_induct_rules",
-        "print_inductives",
-        "print_interps",
-        "print_locale",
-        "print_locales",
-        "print_methods",
-        "print_options",
-        "print_orders",
-        "print_quot_maps",
-        "print_quotconsts",
-        "print_quotients",
-        "print_quotientsQ3",
-        "print_quotmapsQ3",
-        "print_record",
-        "print_rules",
-        "print_simpset",
-        "print_state",
-        "print_statement",
-        "print_syntax",
-        "print_term_bindings",
-        "print_theorems",
-        "print_theory",
-        "print_trans_rules",
-        "smt_status",
-        "thm_deps",
-        "thm_oracles",
-        "thy_deps",
-        "unused_thms",
-        "value",
-        "values",
-        "welcome",
-        "term",
-        "prop",
-        "thm",
-        "typ"
-      ),
-      Severity.Info
-    )
+  extends Illegal_Command_Lint(
+    "Remove interactive diagnostic command",
+    "diagnostic_command",
+    List(
+      "ML_val",
+      "class_deps",
+      "code_deps",
+      "code_thms",
+      "find_consts",
+      "find_theorems",
+      "find_unused_assms",
+      "full_prf",
+      "help",
+      "locale_deps",
+      "prf",
+      "print_ML_antiquotations",
+      "print_abbrevs",
+      "print_antiquotations",
+      "print_attributes",
+      "print_bnfs",
+      "print_bundles",
+      "print_case_translations",
+      "print_cases",
+      "print_claset",
+      "print_classes",
+      "print_codeproc",
+      "print_codesetup",
+      "print_coercions",
+      "print_commands",
+      "print_context",
+      "print_definitions",
+      "print_defn_rules",
+      "print_facts",
+      "print_induct_rules",
+      "print_inductives",
+      "print_interps",
+      "print_locale",
+      "print_locales",
+      "print_methods",
+      "print_options",
+      "print_orders",
+      "print_quot_maps",
+      "print_quotconsts",
+      "print_quotients",
+      "print_quotientsQ3",
+      "print_quotmapsQ3",
+      "print_record",
+      "print_rules",
+      "print_simpset",
+      "print_state",
+      "print_statement",
+      "print_syntax",
+      "print_term_bindings",
+      "print_theorems",
+      "print_theory",
+      "print_trans_rules",
+      "smt_status",
+      "thm_deps",
+      "thm_oracles",
+      "thy_deps",
+      "unused_thms",
+      "value",
+      "values",
+      "welcome",
+      "term",
+      "prop",
+      "thm",
+      "typ"
+    ),
+    Severity.Info
+  )
 
-object Short_Name extends Parser_Lint {
+object Short_Name extends Parser_Lint
+{
 
   val name: String = "short_name"
   val severity: Severity.Level = Severity.Info
@@ -437,14 +453,15 @@ object Short_Name extends Parser_Lint {
     }
 }
 
-object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint {
+object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint
+{
 
   val name: String = "global_attribute_on_unnamed_lemma"
   val severity: Severity.Level = Severity.Error
 
   private def simp_or_cong(attr: List[Elem]): Boolean = attr match {
     case head :: _ => List("simp", "cong").contains(head.info.content)
-    case _         => false
+    case _ => false
   }
 
   override def parser(report: Reporter): Parser[Some[Lint_Result]] =
@@ -459,14 +476,15 @@ object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint {
     }
 }
 
-object Lemma_Transforming_Attribute extends Parser_Lint {
+object Lemma_Transforming_Attribute extends Parser_Lint
+{
 
   val name: String = "lemma_transforming_attribute"
   val severity: Severity.Level = Severity.Warn
 
   private def simp_or_cong(attr: List[Elem]): Boolean = attr match {
     case head :: _ => List("simplified", "rule_format").contains(head.info.content)
-    case _         => false
+    case _ => false
   }
 
   override def parser(report: Reporter): Parser[Some[Lint_Result]] =
@@ -479,7 +497,8 @@ object Lemma_Transforming_Attribute extends Parser_Lint {
     }
 }
 
-object Implicit_Rule extends AST_Lint {
+object Implicit_Rule extends AST_Lint
+{
 
   val name: String = "implicit_rule"
   val severity: Severity.Level = Severity.Warn
@@ -494,19 +513,20 @@ object Implicit_Rule extends AST_Lint {
     }
 }
 
-object Complex_Isar_Initial_Method extends AST_Lint {
+object Complex_Isar_Initial_Method extends AST_Lint
+{
 
   val name: String = "complex_isar_initial_method"
   val severity: Severity.Level = Severity.Warn
 
   def has_auto(method: Method): Boolean = method match {
     case Simple_Method(RToken(_, name, _), _, _) => name == "auto"
-    case Combined_Method(left, _, right, _)      => has_auto(left.info) || has_auto(right.info)
+    case Combined_Method(left, _, right, _) => has_auto(left.info) || has_auto(right.info)
   }
 
   override def lint_isar_proof(
-      method: Option[Text.Info[Method]],
-      report: Reporter
+    method: Option[Text.Info[Method]],
+    report: Reporter
   ): Option[Lint_Result] =
     for {
       Text.Info(range, s_method) <- method
@@ -514,7 +534,8 @@ object Complex_Isar_Initial_Method extends AST_Lint {
     } yield report("Keep initial proof methods simple.", range, None).get
 }
 
-object Force_Failure extends AST_Lint {
+object Force_Failure extends AST_Lint
+{
   val name: String = "force_failure"
   val severity: Severity.Level = Severity.Info
 
@@ -526,7 +547,8 @@ object Force_Failure extends AST_Lint {
     }
 }
 
-object Auto_Structural_Composition extends AST_Lint {
+object Auto_Structural_Composition extends AST_Lint
+{
   val name: String = "auto_structural_composition"
   val severity: Severity.Level = Severity.Info
 
@@ -547,7 +569,8 @@ object Auto_Structural_Composition extends AST_Lint {
     }
 }
 
-object Complex_Method extends AST_Lint {
+object Complex_Method extends AST_Lint
+{
 
   val name: String = "complex_method"
   val severity: Severity.Level = Severity.Warn
@@ -569,7 +592,7 @@ object Complex_Method extends AST_Lint {
   }
 
   private def mkList(method: Method): List[Simple_Method] = method match {
-    case s @ Simple_Method(_, _, _)         => s :: Nil
+    case s@Simple_Method(_, _, _) => s :: Nil
     case Combined_Method(left, _, right, _) => mkList(left.info) ::: mkList(right.info)
   }
 
@@ -581,9 +604,9 @@ object Complex_Method extends AST_Lint {
       has_many_combinators(method)
 
   def is_complex(element: ASTNode): Boolean = element match {
-    case Apply(method)            => is_complex_method(method.info)
+    case Apply(method) => is_complex_method(method.info)
     case Isar_Proof(Some(method)) => is_complex_method(method.info)
-    case _                        => false
+    case _ => false
   }
 
   def is_complex(command: Parsed_Command): Boolean = is_complex(command.ast_node.info)
@@ -593,14 +616,15 @@ object Complex_Method extends AST_Lint {
 
 }
 
-object Print_AST extends AST_Lint {
+object Print_AST extends AST_Lint
+{
 
   val name: String = "print_structure"
   val severity: Severity.Level = Severity.Info
 
   override def lint_ast_node(
-      elem: Text.Info[ASTNode],
-      report: Reporter
+    elem: Text.Info[ASTNode],
+    report: Reporter
   ): Option[Lint_Result] =
     report(s"Parsed: ${elem.info}", elem.range, None)
 }
