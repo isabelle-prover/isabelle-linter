@@ -2,8 +2,6 @@ package isabelle.linter
 
 import isabelle._
 
-import scala.collection.immutable
-
 object Linter {
 
   def lint(
@@ -11,7 +9,6 @@ object Linter {
       configuration: Linter_Configuration
   ): Lint_Report = {
 
-    val commands = snapshot.node.commands.iterator.toList
     val parsed_commands = snapshot.node
       .command_iterator()
       .map { case (command, offset) => Parsed_Command(command, offset, snapshot) }
