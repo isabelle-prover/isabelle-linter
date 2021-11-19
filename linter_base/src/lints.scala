@@ -541,7 +541,7 @@ object Force_Failure extends AST_Lint {
   override def lint_method(method: Text.Info[Method], report: Reporter): Option[Lint_Result] =
     method.info match {
       case Simple_Method(RToken(_, "simp", _), modifiers, args) =>
-        report("Consider forciing failure.", method.range, None)
+        report("Consider forcing failure.", method.range, None)
       case _ => None
     }
 }
