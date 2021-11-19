@@ -171,6 +171,7 @@ object Low_Level_Apply_Chain extends Proper_Commands_Lint {
     case _             => false
   }
 
+  @tailrec
   def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report = {
     val (low_level_commands, rest) =
       commands.dropWhile(!is_low_level_apply(_)).span(is_low_level_apply)
