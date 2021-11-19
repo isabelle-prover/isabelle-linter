@@ -513,9 +513,12 @@ object Complex_Isar_Initial_Method extends AST_Lint {
   val name: String = "complex_isar_initial_method"
   val severity: Severity.Level = Severity.Warn
 
-  def has_auto(method: Method): Boolean = method match {
-    case Simple_Method(RToken(_, name, _), _, _) => name == "auto"
-    case Combined_Method(left, _, right, _)      => has_auto(left.info) || has_auto(right.info)
+  val SIMPLIFIER_METHOD = List("auto", "simp", "clarsimp", "bestsimp", "slowsimp")
+
+  def calls_simplifier(method: Method): Boolean = method match {
+    case Simple_Method(RToken(_, name, _), _, _) => SIMPLIFIER_METHOD.contains(name)
+    case Combined_Method(left, _, right, _) =>
+      calls_simplifier(left.info) || calls_simplifier(right.info)
   }
 
   override def lint_isar_proof(
@@ -524,7 +527,10 @@ object Complex_Isar_Initial_Method extends AST_Lint {
   ): Option[Lint_Result] =
     for {
       Text.Info(range, s_method) <- method
-      if has_auto(s_method) || Complex_Method.is_complex_method(s_method, allow_modifiers = false)
+      if calls_simplifier(s_method) || Complex_Method.is_complex_method(
+        s_method,
+        allow_modifiers = false
+      )
     } yield report("Keep initial proof methods simple.", range, None).get
 }
 
