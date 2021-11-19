@@ -42,7 +42,7 @@ object Text_Reporter extends Reporter[String] {
     report_results(lint_report.results)
 
   private def report_results(lint_results: List[Linter.Lint_Result]): String =
-    lint_results.map(report_result _).mkString("\n" + "=" * 30 + "\n")
+    lint_results.map(report_result).mkString("\n" + "=" * 30 + "\n")
 
   private def report_result(lint_result: Linter.Lint_Result): String = {
     val commands_range = Linter.list_range(lint_result.commands.map(_.range))
