@@ -479,7 +479,7 @@ object Lemma_Transforming_Attribute extends Parser_Lint {
   val severity: Severity.Level = Severity.Warn
 
   private def simp_or_cong(attr: List[Elem]): Boolean = attr match {
-    case head :: _ => List("simplified", "rule_format").contains(head.info.content)
+    case head :: _ => List("simplified", "rule_format", "unfolded").contains(head.info.content)
     case _         => false
   }
 
