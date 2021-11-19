@@ -77,7 +77,7 @@ trait TokenParsers extends Parsers {
 
   // Atoms can be too general, so propagate a predicate
   def pAtom(pred: Token => Boolean): Parser[Elem] =
-    elem("atom", (t => is_atom(t) && pred(t.info)))
+    elem("atom", t => is_atom(t) && pred(t.info))
   def pName: Parser[Elem] = elem("name", _.info.is_name)
 
   /* Args */
@@ -195,13 +195,12 @@ trait TokenParsers extends Parsers {
 
   def pBy: Parser[Text.Info[ASTNode]] =
     pCommand("by") ~ pMethod ~ pMethod.? ^^ {
-      case by ~ method1 ~ method2 => {
+      case by ~ method1 ~ method2 =>
         val methodStop = method2.map(_.range).getOrElse(method1.range).stop
         Text.Info(
           Text.Range(by.range.start, methodStop),
           By(method1, method2)
         )
-      }
     }
 
   /* Attributes */
