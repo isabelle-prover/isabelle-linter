@@ -219,8 +219,8 @@ trait TokenParsers extends Parsers {
       keepSpaces: Boolean = false
   ): Option[T] =
     parse(p, command.tokens, keepSpaces) match {
-      case Success(result, next) => Some(result)
-      case n: NoSuccess          => None
+      case Success(result, _) => Some(result)
+      case _: NoSuccess          => None
     }
 
   def mkString(tokens: List[Elem]): String = tokens.map(_.info.source).mkString

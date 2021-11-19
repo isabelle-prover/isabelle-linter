@@ -41,12 +41,12 @@ object Use_By extends Proper_Commands_Lint with TokenParsers {
       has_by: Boolean = false
   ): Option[String] =
     apply_script match {
-      case apply1 :: apply2 :: done :: Nil =>
+      case apply1 :: apply2 :: _ :: Nil =>
         for {
           method1 <- tryTransform(removeApply, apply1, true)
           method2 <- tryTransform(removeApply, apply2, true)
         } yield s"by $method1 $method2"
-      case apply :: done :: Nil if !has_by =>
+      case apply :: _ :: Nil if !has_by =>
         for {
           method <- tryTransform(removeApply, apply, true)
         } yield s"by $method"
@@ -124,7 +124,7 @@ object Unrestricted_Auto extends Proper_Commands_Lint {
 
   private def is_unrestricted_auto__method(method: Method): Boolean = method match {
 
-    case Simple_Method(name, modifiers, args) =>
+    case Simple_Method(name, modifiers, _) =>
       name.info.content == "auto" && are_unrestricted(modifiers.map(_.info))
 
     case _ => false
@@ -161,7 +161,7 @@ object Low_Level_Apply_Chain extends Proper_Commands_Lint {
   val severity: Severity.Level = Severity.Info
 
   private def is_low_level_method(method: Method): Boolean = method match {
-    case Simple_Method(name, modifiers, args) =>
+    case Simple_Method(name, _, _) =>
       List("erule", "rule", "simp", "clarsimp", "rule_tac").contains(name.info.content)
     case _ => false
   }
@@ -281,7 +281,7 @@ object Axiomatization_With_Where extends Single_Command_Lint {
   val severity: Severity.Level = Severity.Error
 
   def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] = command.tokens match {
-    case RToken(Token.Kind.COMMAND, "axiomatization", range) :: next =>
+    case RToken(Token.Kind.COMMAND, "axiomatization", _) :: next =>
       next.dropWhile(_.info.source != "where") match {
         case xs @ _ :: _ =>
           report(
@@ -520,7 +520,7 @@ object Force_Failure extends AST_Lint {
 
   override def lint_method(method: Text.Info[Method], report: Reporter): Option[Lint_Result] =
     method.info match {
-      case Simple_Method(RToken(_, "simp", _), modifiers, args) =>
+      case Simple_Method(RToken(_, "simp", _), _, _) =>
         report("Consider forciing failure.", method.range, None)
       case _ => None
     }
@@ -531,18 +531,18 @@ object Auto_Structural_Composition extends AST_Lint {
   val severity: Severity.Level = Severity.Info
 
   private def has_auto(method: Method): Boolean = method match {
-    case Simple_Method(name, modifiers, args) => name.info.source == "auto"
-    case Combined_Method(left, combinator, right, modifiers) =>
+    case Simple_Method(name, _, _) => name.info.source == "auto"
+    case Combined_Method(left, _, right, _) =>
       has_auto(left.info) || has_auto(right.info)
 
   }
 
   override def lint_method(method: Text.Info[Method], report: Reporter): Option[Lint_Result] =
     method.info match {
-      case Simple_Method(name, modifiers, args) => None
-      case Combined_Method(left, Method.Combinator.Struct, right, modifiers) =>
+      case Simple_Method(_, _, _) => None
+      case Combined_Method(left, Method.Combinator.Struct, _, _) =>
         if (has_auto(left.info)) report("Do not use apply (auto;...)", method.range, None) else None
-      case Combined_Method(left, _, right, modifiers) =>
+      case Combined_Method(left, _, right, _) =>
         lint_method(left, report).orElse(lint_method(right, report))
     }
 }
