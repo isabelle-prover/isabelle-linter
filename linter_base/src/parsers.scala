@@ -7,7 +7,7 @@ import isabelle._
 import Linter._
 object TokenParsers extends TokenParsers {
 
-  case class IndexPosition(val ts: List[Text.Info[Token]], val i: Int) extends input.Position {
+  case class IndexPosition(ts: List[Text.Info[Token]], i: Int) extends input.Position {
     def column: Int = ts.slice(0, i + 1).map(_.info.content.size).sum
     def line: Int = 0
     protected def lineContents: String = (ts map { _.info.content }).mkString
