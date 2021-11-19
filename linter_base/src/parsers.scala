@@ -108,7 +108,7 @@ trait TokenParsers extends Parsers {
         sep: String,
         combinator: Method.Combinator,
         nextPrecedence: Parser[Text.Info[Method]]
-    ) =
+    ): Parser[Text.Info[Method]] =
       chainl1[Text.Info[Method]](
         nextPrecedence,
         pKeyword(sep)
