@@ -40,7 +40,7 @@ object Lint_Store {
   for (lint <- all_lints) register_lint(lint)
 
   // bundles
-  case class Bundle(val name: String, val lint_names: Set[String])
+  case class Bundle(name: String, lint_names: Set[String])
 
   object Bundle {
 

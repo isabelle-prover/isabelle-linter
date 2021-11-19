@@ -41,7 +41,7 @@ object Linter {
   }
 
   case class Parsed_Command(
-      val command: Command,
+      command: Command,
       offset: Text.Offset,
       snapshot: Document.Snapshot
   ) {
@@ -79,12 +79,12 @@ object Linter {
   }
 
   case class Lint_Result(
-      val lint_name: String,
-      val message: String,
-      val range: Text.Range,
-      val edit: Option[Edit],
-      val severity: Severity.Value,
-      val commands: List[Parsed_Command]
+      lint_name: String,
+      message: String,
+      range: Text.Range,
+      edit: Option[Edit],
+      severity: Severity.Value,
+      commands: List[Parsed_Command]
   ) {
     if (commands.isEmpty)
       error("Expected at least one command.")
@@ -111,7 +111,7 @@ object Linter {
     val empty: Lint_Report = Lint_Report(Nil)
   }
 
-  case class Lint_Report(val _results: List[Lint_Result]) {
+  case class Lint_Report(_results: List[Lint_Result]) {
 
     def add_result(result: Lint_Result): Lint_Report = Lint_Report(result :: _results)
 
@@ -130,7 +130,7 @@ object Linter {
         .sortBy(_.info.id) // Lowest severity first
   }
 
-  case class Edit(val range: Text.Range, val replacement: String, val msg: Option[String] = None) {
+  case class Edit(range: Text.Range, replacement: String, msg: Option[String] = None) {
     val message: String = msg.getOrElse(replacement)
   }
 
