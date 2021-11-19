@@ -4,18 +4,20 @@ package isabelle.linter
 import isabelle._
 
 
-class Linter_Interface(cache: Boolean) {
+class Linter_Interface(cache: Boolean)
+{
   var lint_cache: Map[Document.Node.Name, (Document.Version, Linter.Lint_Report)] = Map.empty
   var configuration: Linter_Configuration = Linter_Configuration.empty
 
-  private def update_cache(snapshot: Document.Snapshot): Unit = {
+  private def update_cache(snapshot: Document.Snapshot): Unit =
+  {
     lazy val new_cache =
       lint_cache + (snapshot.node_name -> (snapshot.version, Linter.lint(
         snapshot,
         configuration
       )))
     lint_cache get snapshot.node_name match {
-      case None               => lint_cache = new_cache
+      case None => lint_cache = new_cache
       case Some((version, _)) => if (snapshot.version.id < version.id) lint_cache = new_cache
     }
   }
@@ -23,19 +25,23 @@ class Linter_Interface(cache: Boolean) {
   def do_lint(snapshot: Document.Snapshot): Unit =
     update_cache(snapshot)
 
-  def lint_report(snapshot: Document.Snapshot): Linter.Lint_Report = {
+  def lint_report(snapshot: Document.Snapshot): Linter.Lint_Report =
+  {
     if (cache) {
-      (for { (_, report) <- lint_cache.get(snapshot.node_name) } yield report)
+      (for {(_, report) <- lint_cache.get(snapshot.node_name)} yield report)
         .getOrElse(Linter.Lint_Report.empty)
     } else Linter.lint(snapshot, configuration)
   }
 }
 
-class Linter_Variable(cache: Boolean = true) {
+class Linter_Variable(cache: Boolean = true)
+{
   private val no_linter: Option[Linter_Interface] = None
   private var current_linter: Option[Linter_Interface] = no_linter
 
-  def get: Option[Linter_Interface] = synchronized { current_linter }
+  def get: Option[Linter_Interface] = synchronized {
+    current_linter
+  }
 
   def update(options: Options): Unit = synchronized {
     if (options.bool("linter")) {

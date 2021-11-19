@@ -6,35 +6,38 @@ import isabelle._
 import scala.collection.mutable.ListBuffer
 
 
-object Linter_Tool {
+object Linter_Tool
+{
 
-  abstract class Lint_CLI {
+  abstract class Lint_CLI
+  {
     protected type A
     val reporter: Reporter[A]
 
     def get_linter_variable: Linter_Variable
 
     def process_args(
-        linter: Linter_Interface,
-        args: Dump.Args,
-        progress: Progress
+      linter: Linter_Interface,
+      args: Dump.Args,
+      progress: Progress
     ): Unit = ()
 
     def process_end(
-        progress: Progress
+      progress: Progress
     ): Unit = ()
 
     def apply(
-        options: Options,
-        logic: String,
-        session_name: String,
-        verbose: Boolean = false,
-        verbose_all: Boolean = false,
-        progress: Progress = new Progress,
-        log: Logger = No_Logger,
-        dirs: List[Path] = Nil,
-        selection: Sessions.Selection = Sessions.Selection.empty
-    ): Unit = {
+      options: Options,
+      logic: String,
+      session_name: String,
+      verbose: Boolean = false,
+      verbose_all: Boolean = false,
+      progress: Progress = new Progress,
+      log: Logger = No_Logger,
+      dirs: List[Path] = Nil,
+      selection: Sessions.Selection = Sessions.Selection.empty
+    ): Unit =
+    {
 
       val context =
         Dump.Context(
@@ -67,7 +70,8 @@ object Linter_Tool {
     }
   }
 
-  class Lint_JSON extends Lint_CLI {
+  class Lint_JSON extends Lint_CLI
+  {
     override protected type A = JSON.T
 
     override val reporter: Reporter[JSON.T] = JSON_Reporter
@@ -78,10 +82,11 @@ object Linter_Tool {
       new Linter_Variable(cache = false)
 
     override def process_args(
-        linter: Linter_Interface,
-        args: Dump.Args,
-        progress: Progress
-    ): Unit = {
+      linter: Linter_Interface,
+      args: Dump.Args,
+      progress: Progress
+    ): Unit =
+    {
       val start_date = Date.now()
       val result = linter.lint_report(args.snapshot)
       val report = reporter.report_for_snapshot(result)
@@ -95,8 +100,9 @@ object Linter_Tool {
     }
 
     override def process_end(
-        progress: Progress
-    ): Unit = {
+      progress: Progress
+    ): Unit =
+    {
       progress.echo(
         JSON.Format(
           JSON.Object(
@@ -107,7 +113,8 @@ object Linter_Tool {
     }
   }
 
-  object Lint_Text extends Lint_CLI {
+  object Lint_Text extends Lint_CLI
+  {
     override protected type A = String
 
     override val reporter: Reporter[String] = Text_Reporter
@@ -116,10 +123,11 @@ object Linter_Tool {
       new Linter_Variable(cache = false)
 
     override def process_args(
-        linter: Linter_Interface,
-        args: Dump.Args,
-        progress: Progress
-    ): Unit = {
+      linter: Linter_Interface,
+      args: Dump.Args,
+      progress: Progress
+    ): Unit =
+    {
       progress.echo(args.print_node + ":")
       val result = linter.lint_report(args.snapshot)
       val report = reporter.report_for_snapshot(result)
@@ -131,7 +139,8 @@ object Linter_Tool {
 
   }
 
-  class Lint_XML extends Lint_CLI {
+  class Lint_XML extends Lint_CLI
+  {
 
     override protected type A = XML.Body
 
@@ -143,10 +152,11 @@ object Linter_Tool {
       new Linter_Variable(cache = false)
 
     override def process_args(
-        linter: Linter_Interface,
-        args: Dump.Args,
-        progress: Progress
-    ): Unit = {
+      linter: Linter_Interface,
+      args: Dump.Args,
+      progress: Progress
+    ): Unit =
+    {
       val start_date = Date.now()
       val result = linter.lint_report(args.snapshot)
       val report = reporter.report_for_snapshot(result)
@@ -159,14 +169,16 @@ object Linter_Tool {
     }
 
     override def process_end(
-        progress: Progress
-    ): Unit = {
+      progress: Progress
+    ): Unit =
+    {
       val xml_reports = XML.Elem(Markup("reports", Nil), reports.toList)
       progress.echo(XML.string_of_tree(xml_reports))
     }
   }
 
-  def list_lints(options: Options, progress: Progress): Unit = {
+  def list_lints(options: Options, progress: Progress): Unit =
+  {
     val linter_variable = new Linter_Variable()
     linter_variable.update(options + "linter=true")
 
@@ -198,7 +210,8 @@ object Linter_Tool {
 Usage: isabelle lint [OPTIONS] SESSION
 
   Options are:
-    -b NAME      base logic image (default """ + isabelle.quote(Dump.default_logic) + """)
+    -b NAME      base logic image (default """ + isabelle.quote(Dump.default_logic) +
+            """)
     -d DIR       include session directory
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose
@@ -227,14 +240,14 @@ Usage: isabelle lint [OPTIONS] SESSION
         val session_name =
           more_args match {
             case List(session_name) => session_name
-            case _                  => getopts.usage()
+            case _ => getopts.usage()
           }
 
         val lint = mode match {
           case "text" => Lint_Text
           case "json" => new Lint_JSON()
-          case "xml"  => new Lint_XML()
-          case _      => error(s"Unrecognized reporting mode $mode")
+          case "xml" => new Lint_XML()
+          case _ => error(s"Unrecognized reporting mode $mode")
         }
 
         progress.interrupt_handler {
@@ -254,4 +267,5 @@ Usage: isabelle lint [OPTIONS] SESSION
       }
     )
 }
+
 class Linter_Tool extends Isabelle_Scala_Tools(Linter_Tool.isabelle_tool)

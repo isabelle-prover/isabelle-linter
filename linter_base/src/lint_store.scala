@@ -3,7 +3,8 @@ package isabelle.linter
 import Linter._
 import scala.collection.mutable.Map
 
-object Lint_Store {
+object Lint_Store
+{
 
   private val store: Map[String, Lint] = Map.empty
 
@@ -42,7 +43,8 @@ object Lint_Store {
   // bundles
   case class Bundle(name: String, lint_names: Set[String])
 
-  object Bundle {
+  object Bundle
+  {
 
     val pedantic = Bundle(
       "pedantic",

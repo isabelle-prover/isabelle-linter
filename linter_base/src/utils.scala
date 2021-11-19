@@ -1,6 +1,7 @@
 package isabelle.linter
 
-object Utils {
+object Utils
+{
 
   def mapAccumL[A, B, C](xs: List[A], acc: B, result: (A, B) => (C, B)): List[C] = xs match {
     case Nil => Nil
