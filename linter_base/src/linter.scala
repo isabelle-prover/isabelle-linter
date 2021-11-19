@@ -201,14 +201,13 @@ object Linter {
 
     def lint(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
       commands
-        .map(command =>
+        .flatMap(command =>
           lint(
             command,
             (message, range, edit) =>
               Some(Lint_Result(name, message, range, edit, severity, command))
           )
         )
-        .flatten
         .foldLeft(report)((report, result) => report.add_result(result))
 
     def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result]
@@ -234,13 +233,13 @@ object Linter {
         method2: Option[Text.Info[Method]],
         report: Reporter
     ): Option[Lint_Result] =
-      lint_method(method1, report) orElse method2.map(lint_method(_, report)).flatten
+      lint_method(method1, report) orElse method2.flatMap(lint_method(_, report))
 
     def lint_apply(method: Text.Info[Method], report: Reporter): Option[Lint_Result] =
       lint_method(method, report)
 
     def lint_isar_proof(method: Option[Text.Info[Method]], report: Reporter): Option[Lint_Result] =
-      method.map(lint_method(_, report)).flatten
+      method.flatMap(lint_method(_, report))
 
     def lint_proof(proof: Text.Info[Proof], report: Reporter): Option[Lint_Result] =
       proof.info match {

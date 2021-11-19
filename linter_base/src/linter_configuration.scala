@@ -29,5 +29,5 @@ class Linter_Configuration(private val lints: Set[String]) {
     bundle_names.foldLeft(this)((config, bundle) => config.add_bundle(bundle))
 
   def get_lints: List[Linter.Lint] =
-    lints.toList.map(Lint_Store.get_lint _).flatten.sortBy(_.severity.id)
+    lints.toList.flatMap(Lint_Store.get_lint _).sortBy(_.severity.id)
 }
