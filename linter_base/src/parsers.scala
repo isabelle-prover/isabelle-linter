@@ -41,7 +41,7 @@ trait TokenParsers extends Parsers {
 
   /* Token kinds */
   def pCommand(name: String): Parser[Elem] = elem(name, _.info.is_command(name))
-  def pCommand(names: String*): Parser[Elem] = anyOf(names.map(pCommand(_)))
+  def pCommand(names: String*): Parser[Elem] = anyOf(names.map(pCommand))
 
   def pSpace: Parser[Elem] = elem("space", _.info.is_space)
 

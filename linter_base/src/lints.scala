@@ -173,7 +173,7 @@ object Low_Level_Apply_Chain extends Proper_Commands_Lint {
 
   def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report = {
     val (low_level_commands, rest) =
-      commands.dropWhile(!is_low_level_apply(_)).span(is_low_level_apply(_))
+      commands.dropWhile(!is_low_level_apply(_)).span(is_low_level_apply)
 
     val new_report =
       if (low_level_commands.length >= 5)
@@ -448,7 +448,7 @@ object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint {
 
   override def parser(report: Reporter): Parser[Some[Lint_Result]] =
     pCommand("lemma") ~> pSqBracketed(pAttributes) >> {
-      _.find(simp_or_cong(_)) match {
+      _.find(simp_or_cong) match {
         case None => failure("no match")
         case Some(tokens) =>
           success(
@@ -470,7 +470,7 @@ object Lemma_Transforming_Attribute extends Parser_Lint {
 
   override def parser(report: Reporter): Parser[Some[Lint_Result]] =
     (pCommand("lemma") ~ pIdent.?) ~> pSqBracketed(pAttributes) >> {
-      _.find(simp_or_cong(_)) match {
+      _.find(simp_or_cong) match {
         case None => failure("no match")
         case Some(tokens) =>
           success(report("Do not use transforming attributes on lemmas.", tokens.head.range, None))

@@ -44,7 +44,7 @@ object Linter_Markup {
     def unapply(props: Properties.T): Option[List[Document_ID.Command]] =
       props.find(_._1 == LINT_COMMANDS) match {
         case Some(p) =>
-          try { Some(space_explode(',', p._2).map(Value.Long.parse _)) }
+          try { Some(space_explode(',', p._2).map(Value.Long.parse)) }
           catch { case ERROR(_) => None }
         case _ => None
       }
