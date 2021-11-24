@@ -1,12 +1,14 @@
 package isabelle.linter
 
-object Linter_Configuration {
+object Linter_Configuration
+{
   def apply(lints: Set[String]): Linter_Configuration = new Linter_Configuration(lints)
 
   def empty: Linter_Configuration = Linter_Configuration(Set.empty)
 }
 
-class Linter_Configuration(private val lints: Set[String]) {
+class Linter_Configuration(private val lints: Set[String])
+{
 
   def enable_lint(lint_name: String): Linter_Configuration =
     Linter_Configuration(lints + lint_name)
@@ -21,7 +23,7 @@ class Linter_Configuration(private val lints: Set[String]) {
     lint_names.foldLeft(this)((config, lint) => config.disable_lint(lint))
 
   def add_bundle(bundle_name: String): Linter_Configuration =
-    (for { bundle <- Lint_Store.get_bundle(bundle_name) } yield {
+    (for {bundle <- Lint_Store.get_bundle(bundle_name)} yield {
       Linter_Configuration(lints ++ bundle.lint_names)
     }).getOrElse(this)
 
@@ -29,5 +31,5 @@ class Linter_Configuration(private val lints: Set[String]) {
     bundle_names.foldLeft(this)((config, bundle) => config.add_bundle(bundle))
 
   def get_lints: List[Linter.Lint] =
-    lints.toList.map(Lint_Store.get_lint _).flatten.sortBy(_.severity.id)
+    lints.toList.flatMap(Lint_Store.get_lint).sortBy(_.severity.id)
 }
