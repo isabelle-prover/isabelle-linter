@@ -1,8 +1,8 @@
 package isabelle.linter
 
 import Linter._
-
 import isabelle._
+
 import scala.annotation.tailrec
 
 object Apply_Isar_Switch extends Proper_Commands_Lint
@@ -10,6 +10,18 @@ object Apply_Isar_Switch extends Proper_Commands_Lint
 
   val name = "apply_isar_switch"
   val severity: Severity.Level = Severity.Warn
+
+  val short_description: Lint_Description =
+    Lint_Description.empty
+      .add("Switching from an apply script to a structured Isar proof is error-prone and hard to read.")
+
+  val long_description: Lint_Description =
+    Lint_Description.empty
+      .add("Switching from an apply script to a structured Isar proof results in an overall ")
+      .add("proof that is hard to read without relying on Isabelle. The Isar proof is also ")
+      .add("sensitive to the output of the apply script, and might therefore break easily.")
+      .references("http://proofcraft.org/blog/isabelle-style.html")
+
 
   @tailrec
   def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
@@ -33,6 +45,29 @@ object Use_By extends Proper_Commands_Lint with TokenParsers
 
   val name: String = "use_by"
   val severity: Severity.Level = Severity.Info
+
+  val short_description: Lint_Description =
+    Lint_Description.empty
+      .add("Using the ").inline_code("by")
+      .add(" command is more concise than short apply-scripts.")
+
+  val long_description: Lint_Description =
+    Lint_Description.empty
+      .add("The ").inline_code("by")
+      .add(" command allows to express method applications using ").inline_code("apply")
+      .addln(" more concisely. For example, instead of")
+      .code_block(
+        "lemma …",
+        "  apply (induction xs)",
+        "  apply auto",
+        "done"
+      )
+      .breakline
+      .inline_code("by").addln("can be used:")
+      .code_block(
+        "lemma …",
+        "  by (induction xs) auto"
+      )
 
   private def removeApply: Parser[String] = (pCommand("apply") ~ pSpace.?) ~> pAny.* ^^ mkString
 
@@ -120,6 +155,17 @@ object Unrestricted_Auto extends Proper_Commands_Lint
   val name: String = "unrestricted_auto"
   val severity: Severity.Level = Severity.Error
 
+  val short_description: Lint_Description =
+    Lint_Description.empty
+      .inline_code("auto").add(" should be used as a terminal proof method or be restricted.")
+
+  val long_description: Lint_Description =
+    Lint_Description.empty
+      .add("Using auto in the middle of a proof on all goals (i.e. unrestricted) might ")
+      .add("produce an unpredictable proof state. It should rather be used as a terminal ")
+      .add("proof method, or be restricted to a set of goals that it fully solves. ")
+      .references("http://proofcraft.org/blog/isabelle-style.html")
+
   private def is_terminal(command: Parsed_Command): Boolean =
     List("sorry", "oops", "done", "\\<proof>").contains(command.kind)
 
@@ -164,6 +210,15 @@ object Low_Level_Apply_Chain extends Proper_Commands_Lint
 
   val name: String = "low_level_apply_chain"
   val severity: Severity.Level = Severity.Info
+
+  val short_description:Lint_Description =
+    Lint_Description.empty
+      .add("Long apply-scripts should be avoided.")
+
+  val long_description: Lint_Description =
+    Lint_Description.empty
+      .add("Using long apply-scripts with low-level methods can quickly make proofs unreadable and ")
+      .add("unnecessarily long. This lints flags such scripts that are longer than five commands.")
 
   val LOW_LEVEL_RULES = List(
     "erule",
@@ -219,6 +274,30 @@ object Global_Attribute_Changes extends Proper_Commands_Lint with TokenParsers
 
   val name: String = "global_attribute_changes"
   val severity: Severity.Level = Severity.Info
+
+  val short_description: Lint_Description =
+    Lint_Description.empty
+      .add("Global lemma attributes should not be changed temporarily, use ")
+      .inline_code("declare").add(" instead.")
+
+  val long_description: Lint_Description =
+    Lint_Description.empty
+      .add("Changing lemma attributes (e.g. ").inline_code("simp").add(") to to accomodate to a local proof")
+      .add("discouraged, as it is error-prone and might result in hard-to debug problems.")
+      .empty_line
+      .addln("Concretely, the lints warns the users of using this pattern:")
+      .code_block(
+        "declare word_neq_0_conv [simp]",
+        "",
+        "  lemma …",
+        "  lemma …",
+        "",
+        "",
+        "declare word_neq_0_conv [simp del]"
+      )
+      .add("Instead, users should use the context, notes or bundle commands.")
+      .references("http://proofcraft.org/blog/isabelle-style-part2.html")
+
 
   type Declaration = (String, List[String]) // Identifier, attribute list without whitespaces
 
@@ -295,6 +374,15 @@ object Use_Isar extends Single_Command_Lint
   val name: String = "use_isar"
   val severity: Severity.Level = Severity.Info
 
+  val short_description: Lint_Description =
+    Lint_Description.empty
+      .inline_code("apply").add("-scripts should be avoided.")
+
+  val long_description: Lint_Description =
+    Lint_Description.empty
+      .add("This lint triggers on every use of the ").inline_code("apply")
+      .add(" command and suggests to use an Isar proof instead.")
+
   def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] = command match {
     case c@Parsed_Command("apply") =>
       report("Use Isar instead of apply-scripts.", c.range, None)
@@ -307,6 +395,30 @@ object Axiomatization_With_Where extends Single_Command_Lint
 
   val name: String = "axiomatization_with_where"
   val severity: Severity.Level = Severity.Error
+
+  val short_description: Lint_Description =
+    Lint_Description.empty
+      .inline_code("axiomatization").add(" commands should not have a ").inline_code("where")
+      .add(" clause, unless when creating or extending a logic.")
+
+  val long_description: Lint_Description =
+    Lint_Description.empty
+      .add("Unless when creating a new logic or extending an existing one with new axioms,")
+      .add("the ").inline_code("axiomatization").add(" command, when used, should not include a ")
+      .inline_code("where").add(" clause.")
+      .empty_line
+      .add("The problem with the ").inline_code("where").add(" clause is that it can introduce inconsistencies")
+      .addln("into the logic, for example:")
+      .code_block(
+        "axiomatization",
+        """  P :: "'a ⇒ bool"""",
+        "where",
+        """  all_true: "∀x. P x" and """,
+        """all_false: "∀x. ¬P x""""
+      )
+      .references("http://proofcraft.org/blog/isabelle-style.html")
+
+
 
   def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] = command.tokens match {
     case RToken(Token.Kind.COMMAND, "axiomatization", _) :: next =>
@@ -327,12 +439,27 @@ abstract class Illegal_Command_Lint(
   message: String,
   lint_name: String,
   illegal_commands: List[String],
-  lint_severity: Severity.Level
+  lint_severity: Severity.Level,
+  lint_description: String,
 ) extends Single_Command_Lint
 {
 
   val name: String = lint_name
   val severity: Severity.Level = lint_severity
+
+  val short_description: Lint_Description =
+    Lint_Description.empty.add(lint_description)
+
+  val long_description: Lint_Description = {
+    illegal_commands.tail
+      .foldLeft(
+        Lint_Description.empty
+          .addln(lint_description + ": ").inline_code(illegal_commands.head)
+      )(
+        (descr, command) => descr.add(", ").inline_code(command)
+      )
+
+  }
 
   def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] =
     if (illegal_commands.contains(command.kind))
@@ -345,7 +472,8 @@ object Unfinished_Proof
     "Consider finishing the proof.",
     "unfinished_proof",
     List("sorry", "oops", "\\<proof>"),
-    Severity.Error
+    Severity.Error,
+    "This lint detects unfinished proofs, characterized by the following commands"
   )
 
 object Proof_Finder
@@ -358,7 +486,8 @@ object Proof_Finder
       "try",
       "try0"
     ),
-    Severity.Error
+    Severity.Error,
+    "This lint detects proof-finder commands"
   )
 
 object Counter_Example_Finder
@@ -370,7 +499,8 @@ object Counter_Example_Finder
       "nunchaku",
       "quickcheck"
     ),
-    Severity.Error
+    Severity.Error,
+    "This lint detects counter-example finders"
   )
 
 object Bad_Style_Command
@@ -378,7 +508,8 @@ object Bad_Style_Command
     "Bad style command.",
     "bad_style_command",
     List("back", "apply_end"),
-    Severity.Warn
+    Severity.Warn,
+    "This lint detects bad-style commands"
   )
 
 object Diagnostic_Command
@@ -451,7 +582,8 @@ object Diagnostic_Command
       "thm",
       "typ"
     ),
-    Severity.Info
+    Severity.Info,
+    "This lint finds diagnostic commands"
   )
 
 object Short_Name extends Parser_Lint
@@ -459,6 +591,12 @@ object Short_Name extends Parser_Lint
 
   val name: String = "short_name"
   val severity: Severity.Level = Severity.Info
+
+  val short_description: Lint_Description =
+    Lint_Description.empty
+      .add("Finds functions or definitions with short names (one character).")
+
+  val long_description: Lint_Description = short_description
 
   override def parser(report: Reporter): Parser[Some[Lint_Result]] =
     pCommand("fun", "definition") ~> elem("ident", _.info.content.length < 2) ^^ {
@@ -474,6 +612,17 @@ object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint
   val severity: Severity.Level = Severity.Error
   val GLOBAL_ATTRIBUTES = List("simp", "cong", "intro", "elim", "dest")
 
+  val short_description: Lint_Description =
+    Lint_Description.empty
+      .add("Setting global attributes on unnamed lemmas should be avoided.")
+
+  val long_description: Lint_Description =
+    Lint_Description.empty
+      .add("Setting a global attribute (like ").inline_code("simp").add(" or ").inline_code("elim")
+      .add(") on an unnamed lemma should be avoided, since it can make debugging proofs")
+      .add(" and removing the effect of that attribute harder.")
+      .references("http://proofcraft.org/blog/isabelle-style.html")
+
   private def simp_or_cong(attr: List[Elem]): Boolean = attr match {
     case head :: _ => GLOBAL_ATTRIBUTES.contains(head.info.content)
     case _ => false
@@ -485,7 +634,7 @@ object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint
         case None => failure("no match")
         case Some(tokens) =>
           success(
-            report("Do not use simplifier attributes on unnamed lemmas.", tokens.head.range, None)
+            report("Do not use global attributes on unnamed lemmas.", tokens.head.range, None)
           )
       }
     }
@@ -496,6 +645,18 @@ object Lemma_Transforming_Attribute extends Parser_Lint
 
   val name: String = "lemma_transforming_attribute"
   val severity: Severity.Level = Severity.Warn
+
+  val short_description: Lint_Description =
+    Lint_Description.empty
+      .add("Setting lemma-transforming attributes on lemmas should be avoided,")
+      .add(" instead the transformed form should be used.")
+
+  val long_description: Lint_Description =
+    Lint_Description.empty
+      .add("This lint warns of using transforming attributes (")
+      .inline_code("simplified").add(", ").inline_code("rule_format").inline_code(", and")
+      .inline_code("unfolded").add(") on lemmas. Instead, the user should write the transformed form.")
+      .references("http://proofcraft.org/blog/isabelle-style-part2.html")
 
   private def simp_or_cong(attr: List[Elem]): Boolean = attr match {
     case head :: _ => List("simplified", "rule_format", "unfolded").contains(head.info.content)
@@ -518,6 +679,19 @@ object Implicit_Rule extends AST_Lint
   val name: String = "implicit_rule"
   val severity: Severity.Level = Severity.Warn
 
+  val short_description: Lint_Description =
+    Lint_Description.empty
+      .add("Explicitly stating the used rule is preferred to using just ")
+      .inline_code("rule").add(".")
+
+  val long_description: Lint_Description =
+    Lint_Description.empty
+      .add("Using ").inline_code("apply rule").add(" results in Isabelle finding the suitable ")
+      .add("rule for the given context. However, if the process for finding the rule ")
+      .add("changes in the future, the proof might break. Instead, users should ")
+      .add("explicitly state which rule is needed.")
+      .references("http://proofcraft.org/blog/isabelle-style.html")
+
   override def lint_method(method: Text.Info[Method], report: Reporter): Option[Lint_Result] =
     method.info match {
       case Simple_Method(RToken(_, "rule", _), _, Nil) =>
@@ -533,6 +707,19 @@ object Complex_Isar_Initial_Method extends AST_Lint
 
   val name: String = "complex_isar_initial_method"
   val severity: Severity.Level = Severity.Warn
+
+  val short_description: Lint_Description =
+    Lint_Description.empty
+      .add("Using complex methods in the ").inline_code("proof").add(" command makes the proof")
+      .add(" brittle and hard to read.")
+
+  val long_description: Lint_Description =
+    Lint_Description.empty
+      .add("Initial ").inline_code("proof").add(" methods should be kept simple, in order ")
+      .add("to keep the goals of the proof clear. For example, simplifier calls should ")
+      .add("be avoided, and not many methods should be combined. This lint finds complex ")
+      .add("methods in proof commands.")
+      .references("http://proofcraft.org/blog/isabelle-style.html")
 
   val SIMPLIFIER_METHOD = List("auto", "simp", "clarsimp", "bestsimp", "slowsimp")
 
@@ -560,6 +747,19 @@ object Force_Failure extends AST_Lint
   val name: String = "force_failure"
   val severity: Severity.Level = Severity.Info
 
+  val short_description: Lint_Description =
+    Lint_Description.empty
+      .add("Forcing failure, for example ").inline_code("apply (simp; fail)")
+      .add(", might be helpful.")
+
+  val long_description: Lint_Description =
+    Lint_Description.empty
+      .add("Since some methods do not guarantee to solve all their goals, it might be ")
+      .add("helpful to consider forcing their failure (e.g. using ")
+      .inline_code("apply (simp; fail)").add(" instead of just ").inline_code("apply simp")
+      .add(") in order to make debugging proofs easier.")
+      .references("http://proofcraft.org/blog/isabelle-style-part2.html")
+
   override def lint_method(method: Text.Info[Method], report: Reporter): Option[Lint_Result] =
     method.info match {
       case Simple_Method(RToken(_, "simp", _), _, _) =>
@@ -572,6 +772,16 @@ object Auto_Structural_Composition extends AST_Lint
 {
   val name: String = "auto_structural_composition"
   val severity: Severity.Level = Severity.Info
+
+  val short_description: Lint_Description =
+    Lint_Description.empty
+      .add("Using ").inline_code("apply (auto;…)").add(" is discouraged.")
+
+  val long_description: Lint_Description =
+    Lint_Description.empty
+      .add("Using ").inline_code("apply (auto;…)").add(" results in a behavior that is hard to predict, ")
+      .add("so it is discouraged.")
+      .references("http://proofcraft.org/blog/isabelle-style-part2.html")
 
   private def has_auto(method: Method): Boolean = method match {
     case Simple_Method(name, _, _) => name.info.source == "auto"
@@ -595,6 +805,22 @@ object Complex_Method extends AST_Lint
 
   val name: String = "complex_method"
   val severity: Severity.Level = Severity.Warn
+
+  val short_description: Lint_Description =
+    Lint_Description.empty
+      .add("Using complex methods (e.g. too much nesting) should be avoided.")
+
+  val long_description: Lint_Description =
+    Lint_Description.empty
+      .addln("Warns users from using overly complex methods, i.e. if one of the following holds:")
+      .breakline
+      .add("- has more than one modifier (").inline_code("?, +, or []").add("), for example ").inline_code("auto?[4]")
+      .breakline
+      .add("- has modifiers that are not at the outmost level, for example ").inline_code("auto[3] | blast")
+      .breakline
+      .add("- has three or more combinators (").inline_code("|, ;, ,").add("), for example ")
+      .inline_code("auto ; rule , (force | blast)").breakline
+
 
   val modifier_length: Int = 1
   val combinator_threshold: Int = 4
@@ -642,6 +868,11 @@ object Print_AST extends AST_Lint
 
   val name: String = "print_structure"
   val severity: Severity.Level = Severity.Info
+
+  val short_description: Lint_Description =
+    Lint_Description.empty.add("Debugging lint. Prints the AST of the active command.")
+
+  val long_description: Lint_Description = short_description
 
   override def lint_ast_node(
     elem: Text.Info[ASTNode],
