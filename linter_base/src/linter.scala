@@ -157,6 +157,8 @@ object Linter
   {
     val name: String
     val severity: Severity.Level
+    val short_description: Lint_Description
+    val long_description: Lint_Description
 
     def lint(commands: List[Parsed_Command], report: Lint_Report): Lint_Report
 
