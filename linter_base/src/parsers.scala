@@ -238,7 +238,7 @@ trait TokenParsers extends Parsers
     }
 
   /* Attributes */
-  def pAttribute: Parser[List[Elem]] = pIdent.*
+  def pAttribute: Parser[List[Elem]] = (pIdent | pKeyword("!") | pKeyword("?")).*
 
   def pAttributes: Parser[List[List[Elem]]] =
     chainl1[List[List[Elem]]](pAttribute ^^ {

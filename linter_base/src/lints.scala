@@ -472,9 +472,10 @@ object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint
 
   val name: String = "global_attribute_on_unnamed_lemma"
   val severity: Severity.Level = Severity.Error
+  val GLOBAL_ATTRIBUTES = List("simp", "cong", "intro", "elim", "dest")
 
   private def simp_or_cong(attr: List[Elem]): Boolean = attr match {
-    case head :: _ => List("simp", "cong").contains(head.info.content)
+    case head :: _ => GLOBAL_ATTRIBUTES.contains(head.info.content)
     case _ => false
   }
 
