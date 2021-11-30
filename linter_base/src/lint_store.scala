@@ -13,7 +13,7 @@ object Lint_Store
 
   def get_lint(lint_name: String): Option[Lint] = store.get(lint_name)
 
-  private val all_lints: List[Lint] = List(
+  val lints: List[Lint] = List(
     Apply_Isar_Switch,
     Auto_Structural_Composition,
     Axiomatization_With_Where,
@@ -34,9 +34,9 @@ object Lint_Store
     Unrestricted_Auto,
     Use_By,
     Use_Isar,
-    // Debugging lints
-    Print_AST,
   )
+
+  private val all_lints: List[Lint] = Print_AST :: lints
 
   for (lint <- all_lints) register_lint(lint)
 

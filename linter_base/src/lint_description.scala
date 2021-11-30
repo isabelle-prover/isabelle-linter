@@ -57,7 +57,7 @@ object Markdown_Renderer extends Lint_Description_Renderer
     s"$left$content$right"
 
   def wrapTags(tag: String): String => String =
-    wrap(s"<$tag>", s"</$tag>")
+    wrap("<" + tag + ">", "</" + tag + ">")
 
   private val empty_line: String = "<br /><br />\n"
 
