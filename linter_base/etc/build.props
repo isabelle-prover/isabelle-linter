@@ -10,8 +10,12 @@ sources = \
   src/linter_interface.scala \
   src/linter_tool.scala \
   src/lints.scala \
+  src/print_lints.scala \
+  src/lint_description.scala \
   src/markup.scala \
   src/parsers.scala \
   src/reporter.scala \
   src/utils.scala
-services = isabelle.linter.Linter_Tool
+services = \
+  isabelle.linter.Linter_Tool \
+  isabelle.linter.Lint_Descriptions
