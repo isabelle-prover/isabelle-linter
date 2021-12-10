@@ -13,7 +13,7 @@ object Overlay_Reporter extends Reporter[Linter_Overlay.State]
     report_for_snapshot(lint_report).find(_._1.id == id).map(Map(_)).getOrElse(Map.empty)
   }
 
-  override def report_for_snapshot(lint_report: Linter.Lint_Report): Linter_Overlay.State =
+  override def report_for_snapshot(lint_report: Linter.Lint_Report, show_desriptions: Boolean = false): Linter_Overlay.State =
   {
     val commands = lint_report.results
       .flatMap(result => result.commands.map(_ -> result))

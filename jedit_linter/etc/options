@@ -2,3 +2,6 @@ section "Linter"
 
 public option lint_all : bool = true
   -- "display the lints of the whole document"
+
+public option show_descriptions : bool = true
+  -- "display the descriptions of the lints"

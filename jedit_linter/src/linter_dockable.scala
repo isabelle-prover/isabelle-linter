@@ -92,7 +92,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
             PIDE.editor.current_command(view, snapshot).getOrElse(Command.empty)
 
           val report = linter.lint_report(snapshot)
-          val snapshot_lints = XML_Reporter.report_for_snapshot(report)
+          val snapshot_lints = XML_Reporter.report_for_snapshot(report, show_descriptions)
           val command_lints = XML_Reporter.report_for_command(report, current_command.id)
 
           val all_lints =
@@ -141,6 +141,23 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
     selected = lint_all
   }
 
+  private def show_descriptions: Boolean = PIDE.options.bool("show_descriptions")
+
+  private def show_descriptions_=(b: Boolean): Unit =
+  {
+    if (show_descriptions != b) {
+      PIDE.options.bool("show_descriptions") = b
+      PIDE.editor.flush_edits(hidden = true)
+      PIDE.editor.flush()
+    }
+  }
+
+  private val show_descriptions_checkbox = new CheckBox("Show Descriptions") {
+    tooltip = "Whether to show lint descriptions"
+    reactions += { case ButtonClicked(_) => show_descriptions = selected; handle_lint() }
+    selected = show_descriptions
+  }
+
   private val auto_lint_button = new CheckBox("Auto lint") {
     tooltip = "Indicate automatic lint following cursor movement"
     reactions += { case ButtonClicked(_) => auto_lint_enabled = selected; auto_lint() }
@@ -176,7 +193,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
   private val zoom = new Font_Info.Zoom_Box { def changed = handle_resize() }
 
   private val controls =
-    Wrap_Panel(List(linter_button, auto_lint_button, lint_all_button, lint_button, zoom))
+    Wrap_Panel(List(linter_button, auto_lint_button, lint_all_button, show_descriptions_checkbox, lint_button, zoom))
 
   add(controls.peer, BorderLayout.NORTH)
 
