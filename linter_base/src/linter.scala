@@ -142,7 +142,16 @@ object Linter
     val message: String = msg.getOrElse(replacement)
   }
 
-  type Reporter = (String, Text.Range, Option[Edit]) => Some[Lint_Result]
+  case class Reporter(
+    command: Parsed_Command,
+    name: String,
+    severity: Severity.Level,
+    short_description: Lint_Description)
+  {
+    def apply(message: String, range: Text.Range, edit: Option[Edit]): Some[Lint_Result] =
+      Some(Lint_Result(name, message, range, edit, severity, command, short_description))
+
+  }
 
   object Severity extends Enumeration
   {
@@ -220,8 +229,7 @@ object Linter
         .flatMap(command =>
           lint(
             command,
-            (message, range, edit) =>
-              Some(Lint_Result(name, message, range, edit, severity, command, short_description))
+            Reporter(command, name, severity, short_description)
           )
         )
         .foldLeft(report)((report, result) => report.add_result(result))
