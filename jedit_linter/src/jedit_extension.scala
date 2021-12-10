@@ -58,11 +58,17 @@ object JEdit_Extension
     val buffer = text_area.getBuffer
     if (!snapshot.is_outdated) {
       JEdit_Lib.buffer_edit(buffer) {
-          buffer.remove(range.start, range.length)
-          text_area.moveCaretPosition(range.start)
-          text_area.setSelectedText(text)
+        text_area.moveCaretPosition(range.start + range.length)
+        val start_line = text_area.getCaretLine + 1
+        text_area.setSelectedText(text)
+        val end_line = text_area.getCaretLine
+        for (line <- start_line to end_line) {
+          Token_Markup.Line_Context.refresh(buffer, line)
+          buffer.indentLine(line, true)
         }
+        buffer.remove(range.start, range.length)
       }
+    }
   }
 
   class Handler extends Active.Handler {
