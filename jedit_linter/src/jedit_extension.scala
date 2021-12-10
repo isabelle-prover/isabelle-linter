@@ -56,7 +56,7 @@ object JEdit_Extension
     range: Symbol.Range, text: String): Unit =
   {
     val buffer = text_area.getBuffer
-    if (!snapshot.is_outdated && text != "") {
+    if (!snapshot.is_outdated) {
       JEdit_Lib.buffer_edit(buffer) {
           buffer.remove(range.start, range.length)
           text_area.moveCaretPosition(range.start)
@@ -70,8 +70,11 @@ object JEdit_Extension
       doc_view: Document_View, snapshot: Document.Snapshot): Boolean =
     {
       elem match {
-        case XML.Elem(Markup(Linter_Markup.LINTER_SENDBACK, Position.Range(range)), _) =>
-          replace_range(snapshot, doc_view.text_area, range, text)
+        case XML.Elem(Markup(Linter_Markup.LINTER_SENDBACK, props), _) =>
+          for {
+            range <- Position.Range.unapply(props)
+            replacement <- Markup.Content.unapply(props)
+          } replace_range(snapshot, doc_view.text_area, range, replacement)
           true
         case XML.Elem(Markup(Linter_Markup.GOTO_POSITION, pos), _) =>
           val link = PIDE.editor.hyperlink_position(true, snapshot, pos)
