@@ -640,6 +640,32 @@ object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint
     }
 }
 
+object Tactic_Proofs extends AST_Lint
+{
+  val name: String = "tactic_proofs"
+  val severity: Severity.Level = Severity.Error
+
+  private val TACTICS = List("insert", "subgoal_tac", "induct_tac", "rule_tac", "case_tac")
+
+  val short_description: Lint_Description =
+    Lint_Description.empty
+      .add("Using tactics is considered harmful and should be avoided.")
+
+  val long_description: Lint_Description =
+    short_description
+      .add(" The lints warns about using the following methods: ")
+      .inline_code(TACTICS.mkString(", "))
+
+  override def lint_method(method: Text.Info[Method], report: Reporter) =
+    method.info match {
+      case Simple_Method(RToken(_, name, _), _, _) if TACTICS.contains(name) =>
+        report("Do not use tactic proofs.", method.range, None)
+      case Combined_Method(left, _, right, _) =>
+        lint_method(left, report).orElse(lint_method(right, report))
+      case _ => None
+    }
+}
+
 object Lemma_Transforming_Attribute extends Parser_Lint
 {
 
