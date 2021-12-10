@@ -30,6 +30,7 @@ object Lint_Store
     Low_Level_Apply_Chain,
     Proof_Finder,
     Short_Name,
+    Tactic_Proofs,
     Unfinished_Proof,
     Unrestricted_Auto,
     Use_By,
@@ -113,7 +114,8 @@ object Lint_Store
         Implicit_Rule.name,
         Complex_Isar_Initial_Method.name,
         Global_Attribute_Changes.name,
-        Complex_Method.name
+        Complex_Method.name,
+        Tactic_Proofs.name
       )
     )
 

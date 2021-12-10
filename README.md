@@ -83,6 +83,7 @@ References: http://proofcraft.org/blog/isabelle-style-part2.html</td></tr>
 <tr><td>proof_finder</td><td>error</td><td>This lint detects proof-finder commands</td><td>This lint detects proof-finder commands:
 <code>sledgehammer</code>, <code>solve_direct</code>, <code>try</code>, <code>try0</code></td></tr>
 <tr><td>short_name</td><td>info</td><td>Finds functions or definitions with short names (one character).</td><td>Finds functions or definitions with short names (one character).</td></tr>
+<tr><td>tactic_proofs</td><td>error</td><td>Using tactics is considered harmful and should be avoided.</td><td>Using tactics is considered harmful and should be avoided. The lints warns about using the following methods: <code>insert, subgoal_tac, induct_tac, rule_tac, case_tac</code></td></tr>
 <tr><td>unfinished_proof</td><td>error</td><td>This lint detects unfinished proofs, characterized by the following commands</td><td>This lint detects unfinished proofs, characterized by the following commands:
 <code>sorry</code>, <code>oops</code>, <code>\&ltproof&gt</code></td></tr>
 <tr><td>unrestricted_auto</td><td>error</td><td><code>auto</code> should be used as a terminal proof method or be restricted.</td><td>Using auto in the middle of a proof on all goals (i.e. unrestricted) might produce an unpredictable proof state. It should rather be used as a terminal proof method, or be restricted to a set of goals that it fully solves. <br /><br />
