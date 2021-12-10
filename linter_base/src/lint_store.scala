@@ -32,6 +32,7 @@ object Lint_Store
     Short_Name,
     Unfinished_Proof,
     Unrestricted_Auto,
+    Use_Apply,
     Use_By,
     Use_Isar,
   )

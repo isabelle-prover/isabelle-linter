@@ -88,6 +88,20 @@ References: http://proofcraft.org/blog/isabelle-style-part2.html</td></tr>
 <tr><td>unrestricted_auto</td><td>error</td><td><code>auto</code> should be used as a terminal proof method or be restricted.</td><td>Using auto in the middle of a proof on all goals (i.e. unrestricted) might produce an unpredictable proof state. It should rather be used as a terminal proof method, or be restricted to a set of goals that it fully solves. <br /><br />
 
 References: http://proofcraft.org/blog/isabelle-style.html</td></tr>
+<tr><td>use_apply</td><td>info</td><td>Use the expanded form corresponding to the <code>by</code> command.</td><td>This lint is the inverse direction of the <code>use_by</code> lint: it identifies usages of the <code>by</code> command and suggests toexpand the methods. As an example, it helps transform
+
+```isabelle
+lemma …
+  by (induction xs) auto
+```
+into
+```isabelle
+lemma …
+  apply (induction xs)
+  apply auto
+done
+```
+</td></tr>
 <tr><td>use_by</td><td>info</td><td>Using the <code>by</code> command is more concise than short apply-scripts.</td><td>The <code>by</code> command allows to express method applications using <code>apply</code> more concisely. For example, instead of
 
 ```isabelle
