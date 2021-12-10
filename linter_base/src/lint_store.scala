@@ -33,6 +33,7 @@ object Lint_Store
     Tactic_Proofs,
     Unfinished_Proof,
     Unrestricted_Auto,
+    Use_Apply,
     Use_By,
     Use_Isar,
   )

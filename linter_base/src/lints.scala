@@ -40,6 +40,44 @@ object Apply_Isar_Switch extends Proper_Commands_Lint
     }
 }
 
+object Use_Apply extends  AST_Lint
+{
+  val name: String = "use_apply"
+  val severity: Severity.Level = Severity.Info
+  val short_description: Lint_Description =
+    Lint_Description.empty
+      .add("Use the expanded form corresponding to the ").inline_code("by")
+      .add(" command.")
+
+  val long_description: Lint_Description =
+    Lint_Description.empty
+      .add("This lint is the inverse direction of the ").inline_code("use_by")
+      .add(" lint: it identifies usages of the ").inline_code("by").add(" command and suggests to")
+      .addln("expand the methods. As an example, it helps transform")
+      .code_block(
+        "lemma …",
+        "  by (induction xs) auto"
+      )
+      .add("into")
+      .code_block(
+        "lemma …",
+        "  apply (induction xs)",
+        "  apply auto",
+        "done"
+      )
+
+  override def lint_proof(proof: Text.Info[Proof], report: Reporter) =
+    proof.info match {
+      case By(method1, method2) =>
+        val apply1 = s"apply ${report.source(method1.range)}\n"
+        val apply2 = method2.map(some_method => s"apply ${report.source(some_method.range)}\n").getOrElse("")
+        val replacement = apply1 + apply2 + "done"
+        report("Use \"apply\" instead of \"by\".", proof.range, Some(Edit(proof.range, replacement)))
+      case _ => None
+    }
+
+}
+
 object Use_By extends Proper_Commands_Lint with TokenParsers
 {
 
