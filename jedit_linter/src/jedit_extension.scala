@@ -46,8 +46,10 @@ object JEdit_Extension
     val theory = PIDE.resources.theory_name(Sessions.DRAFT, Thy_Header.theory_name(node))
     val node_name = Document.Node.Name(node, path.dir.implode, theory)
 
-    Document_Model.provide_files(PIDE.session, List(node_name -> File.read(path)))
-    Document_Model.node_required(node_name, set = true)
+    GUI_Thread.later {
+      Document_Model.provide_files(PIDE.session, List(node_name -> File.read(path)))
+      Document_Model.node_required(node_name, set = true)
+    }
   }
 
   def replace_range(snapshot: Document.Snapshot, text_area: TextArea,

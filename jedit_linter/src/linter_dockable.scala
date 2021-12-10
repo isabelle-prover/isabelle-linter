@@ -31,11 +31,9 @@ class PIDE_Linter_Variable extends Linter_Variable(true)
   private val main =
     Session.Consumer[Any](getClass.getName) { _ =>
       GUI_Thread.later {
-        Isabelle_Thread.fork(name = "linter") {
-          refresh_lint()
-          // FIXME maybe a separate event for the linter?
-          PIDE.session.caret_focus.post(Session.Caret_Focus)
-        }
+        refresh_lint()
+        // FIXME maybe a separate event for the linter?
+        PIDE.session.caret_focus.post(Session.Caret_Focus)
       }
     }
 
