@@ -1,5 +1,7 @@
 package isabelle.linter
 
+import isabelle._
+
 object Lint_Description
 {
   val empty: Lint_Description = Lint_Description(Nil)
@@ -73,5 +75,18 @@ object Markdown_Renderer extends Lint_Description_Renderer
       case Code_Block(strs) =>
         wrap("\n```isabelle\n", "\n```\n")(strs.map(sanitize).mkString("\n"))
       case Reference(url) => empty_line + "\nReferences: " + sanitize(url)
+    }
+}
+
+object XML_Renderer extends Lint_Description_Renderer
+{
+  override def render(e: Description_Element): String =
+    e match {
+      case Inline_Code(str) => Library.quote(str)
+      case Plain(str) => str
+      case Line_Break() => "\n"
+      case Empty_Line() => "\n\n"
+      case Code_Block(strs) => strs.mkString("\n")
+      case Reference(url) => "\nReferences:" + url
     }
 }
