@@ -53,6 +53,10 @@ object Linter
 
     val range: Text.Range = command.range + offset
 
+    val source: String = command.source
+
+    def source(range: Text.Range): String = command.source(range - this.range.start)
+
     def generate_positions(
       tokens: List[Token],
       start_offset: Text.Offset
@@ -151,6 +155,8 @@ object Linter
     def apply(message: String, range: Text.Range, edit: Option[Edit]): Some[Lint_Result] =
       Some(Lint_Result(name, message, range, edit, severity, command, short_description))
 
+    def source(range: Text.Range): String =
+      command.source(range)
   }
 
   object Severity extends Enumeration
