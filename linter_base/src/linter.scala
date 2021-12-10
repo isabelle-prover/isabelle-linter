@@ -85,7 +85,8 @@ object Linter
     range: Text.Range,
     edit: Option[Edit],
     severity: Severity.Value,
-    commands: List[Parsed_Command]
+    commands: List[Parsed_Command],
+    short_description: Lint_Description
   )
   {
     if (commands.isEmpty)
@@ -106,8 +107,9 @@ object Linter
       range: Text.Range,
       edit: Option[Edit],
       severity: Severity.Value,
-      command: Parsed_Command
-    ): Lint_Result = Lint_Result(lint_name, message, range, edit, severity, command :: Nil)
+      command: Parsed_Command,
+      short_description: Lint_Description
+    ): Lint_Result = Lint_Result(lint_name, message, range, edit, severity, command :: Nil, short_description)
   }
 
   object Lint_Report
@@ -185,7 +187,8 @@ object Linter
           range,
           edit,
           severity,
-          command
+          command,
+          short_description
         )
       )
 
@@ -203,7 +206,8 @@ object Linter
           range,
           edit,
           severity,
-          commands
+          commands,
+          short_description
         )
       )
   }
@@ -217,7 +221,7 @@ object Linter
           lint(
             command,
             (message, range, edit) =>
-              Some(Lint_Result(name, message, range, edit, severity, command))
+              Some(Lint_Result(name, message, range, edit, severity, command, short_description))
           )
         )
         .foldLeft(report)((report, result) => report.add_result(result))

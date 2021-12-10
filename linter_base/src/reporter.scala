@@ -6,7 +6,7 @@ trait Reporter[A]
 {
   def report_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): A
 
-  def report_for_snapshot(lint_report: Linter.Lint_Report): A
+  def report_for_snapshot(lint_report: Linter.Lint_Report, show_descriptions: Boolean = false): A
 }
 
 object JSON_Reporter extends Reporter[JSON.T]
@@ -14,7 +14,7 @@ object JSON_Reporter extends Reporter[JSON.T]
   def report_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): JSON.T =
     JSON.Object("results" -> lint_report.command_lints(id))
 
-  def report_for_snapshot(lint_report: Linter.Lint_Report): JSON.T =
+  def report_for_snapshot(lint_report: Linter.Lint_Report, show_descriptions: Boolean = false): JSON.T =
     JSON.Object("results" -> lint_report.results.map(report_result))
 
   private def report_result(lint_result: Linter.Lint_Result): JSON.T = JSON.Object(
@@ -42,7 +42,7 @@ object Text_Reporter extends Reporter[String]
   def report_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): String =
     report_results(lint_report.command_lints(id))
 
-  def report_for_snapshot(lint_report: Linter.Lint_Report): String =
+  def report_for_snapshot(lint_report: Linter.Lint_Report, show_descriptions: Boolean = false): String =
     report_results(lint_report.results)
 
   private def report_results(lint_results: List[Linter.Lint_Result]): String =
@@ -113,29 +113,33 @@ object XML_Reporter extends Reporter[XML.Body]
     else XML.elem(Markup.KEYWORD1, text("lints:")) :: xml
   }
 
-  def report_for_snapshot(lint_report: Linter.Lint_Report): XML.Body =
+  def report_for_snapshot(lint_report: Linter.Lint_Report, show_descriptions: Boolean = false): XML.Body =
     report_lints(
       lint_report.results,
-      compact = false
+      compact = false,
+      show_descriptions = show_descriptions
     )
 
   private def report_lints(
     lint_results: List[Linter.Lint_Result],
-    compact: Boolean = true
+    compact: Boolean = true,
+    show_descriptions: Boolean = false,
   ): XML.Body =
     lint_results.zipWithIndex
       .flatMap(ri =>
         report_lint(
           ri._1,
           ri._2,
-          compact = compact
+          compact = compact,
+          show_descriptions = show_descriptions,
         )
       )
 
   private def report_lint(
     lint_result: Linter.Lint_Result,
     lint_number: Int = 0,
-    compact: Boolean = true
+    compact: Boolean = true,
+    show_descriptions: Boolean = false
   ): XML.Body =
   {
 
@@ -154,6 +158,10 @@ object XML_Reporter extends Reporter[XML.Body]
             ::: edit
             ::: text(s"\n    Name: ${lint_result.lint_name}")
             ::: text(s"\n    Severity: ${lint_result.severity}")
+            :::
+            (if (show_descriptions)
+              text(s"\n    Description: ${XML_Renderer.render(lint_result.short_description)}")
+             else Nil)
           )
     add_meta(inner, lint_result)
   }
