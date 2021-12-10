@@ -204,7 +204,7 @@ trait TokenParsers extends Parsers
 
     /* Method */
     def pMethod: Parser[Text.Info[Method]] =
-      (pNameOnly | pParened(pMethods)) ~ pModifier.? ^^ { case body ~ modifier =>
+      (pNameOnly | pParenedExtend(pMethods)) ~ pModifier.? ^^ { case body ~ modifier =>
         addModifier(body, modifier)
       }
 
