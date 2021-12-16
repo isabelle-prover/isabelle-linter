@@ -54,4 +54,11 @@ case class Isar_Proof(method: Option[Text.Info[Method]]) extends Proof
 case class By(method1: Text.Info[Method], method2: Option[Text.Info[Method]])
   extends Proof
 
+
+case class Counter_Example_Finder(
+  name: Text.Info[Token],
+  attributes: List[List[Text.Info[Token]]]
+) extends ASTNode
+
 case class Failed(string: String) extends ASTNode
+

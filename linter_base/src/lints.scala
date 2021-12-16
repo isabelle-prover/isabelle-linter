@@ -490,19 +490,6 @@ object Proof_Finder
     "This lint detects proof-finder commands"
   )
 
-object Counter_Example_Finder
-  extends Illegal_Command_Lint(
-    "Remove counter-example finder command.",
-    "counter_example_finder",
-    List(
-      "nitpick",
-      "nunchaku",
-      "quickcheck"
-    ),
-    Severity.Error,
-    "This lint detects counter-example finders"
-  )
-
 object Bad_Style_Command
   extends Illegal_Command_Lint(
     "Bad style command.",
@@ -585,6 +572,38 @@ object Diagnostic_Command
     Severity.Info,
     "This lint finds diagnostic commands"
   )
+
+object Counter_Example_Finder_Lint extends AST_Lint
+{
+
+  val name: String = "counter_example_finder"
+  val severity: Severity.Level = Severity.Error
+
+  val description_start: Lint_Description =
+    Lint_Description.empty
+      .add("This lint detects counter-example finders")
+
+  val short_description: Lint_Description =
+    description_start.add(".")
+
+  override val long_description =
+    description_start.add(": ").inline_code("nitpick").add(", ").inline_code("nunchaku")
+      .add(", and ").inline_code("quickcheck").add(".")
+
+  def no_expect(attributes: List[List[Text.Info[Token]]]): Boolean =
+    !attributes.exists(_.headOption.exists(_.info.content == "expect"))
+
+  override def lint_ast_node(elem: Text.Info[ASTNode], report: Reporter): Option[Lint_Result] =
+    elem.info match {
+      case Counter_Example_Finder(_, attributes) if attributes.isEmpty || no_expect(attributes)
+      => report(
+        "Remove counter-example finder command.",
+        elem.range,
+        Some(Edit(elem.range, "", Some("Remove invocation")))
+      )
+      case _ => None
+    }
+}
 
 object Short_Name extends Parser_Lint
 {

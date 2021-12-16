@@ -237,8 +237,15 @@ trait TokenParsers extends Parsers
         )
     }
 
+  def pCounterExampleCommand: Parser[Text.Info[ASTNode]] =
+    pCommand("nunchaku", "nitpick", "quickcheck") ~ (pSqBracketed(pAttributes) | success(Nil))  ^^ {
+      case commandName ~ attributes =>
+        val attr_stop = attributes.lastOption.flatMap(_.lastOption).map(_.range.stop).getOrElse(commandName.range.stop)
+        Text.Info(Text.Range(commandName.range.start, attr_stop), Counter_Example_Finder(commandName, attributes))
+    }
+
   /* Attributes */
-  def pAttribute: Parser[List[Elem]] = (pIdent | pKeyword("!") | pKeyword("?")).*
+  def pAttribute: Parser[List[Elem]] = (pIdent | pKeyword("=") | pKeyword("!") | pKeyword("?")).*
 
   def pAttributes: Parser[List[List[Elem]]] =
     chainl1[List[List[Elem]]](pAttribute ^^ {
@@ -249,7 +256,7 @@ trait TokenParsers extends Parsers
 
   def pAny: Parser[Elem] = elem("any", _ => true)
 
-  def tokenParser: Parser[Text.Info[ASTNode]] = pApply | pIsarProof | pBy
+  def tokenParser: Parser[Text.Info[ASTNode]] = pApply | pIsarProof | pBy | pCounterExampleCommand
 
   def tryTransform[T](
     p: Parser[T],
