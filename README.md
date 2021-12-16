@@ -37,7 +37,7 @@ all_false: "∀x. ¬P x"
 <br /><br />
 
 References: http://proofcraft.org/blog/isabelle-style.html</td></tr>
-<tr><td>bad_style_command</td><td>warn</td><td>This lint detects bad-style commands</td><td>This lint detects bad-style commands:
+<tr><td>bad_style_command</td><td>error</td><td>This lint detects bad-style commands</td><td>This lint detects bad-style commands:
 <code>back</code>, <code>apply_end</code></td></tr>
 <tr><td>complex_isar_initial_method</td><td>warn</td><td>Using complex methods in the <code>proof</code> command makes the proof brittle and hard to read.</td><td>Initial <code>proof</code> methods should be kept simple, in order to keep the goals of the proof clear. For example, simplifier calls should be avoided, and not many methods should be combined. This lint finds complex methods in proof commands.<br /><br />
 
@@ -55,7 +55,7 @@ References: http://proofcraft.org/blog/isabelle-style.html</td></tr>
 <tr><td>force_failure</td><td>info</td><td>Forcing failure, for example <code>apply (simp; fail)</code>, might be helpful.</td><td>Since some methods do not guarantee to solve all their goals, it might be helpful to consider forcing their failure (e.g. using <code>apply (simp; fail)</code> instead of just <code>apply simp</code>) in order to make debugging proofs easier.<br /><br />
 
 References: http://proofcraft.org/blog/isabelle-style-part2.html</td></tr>
-<tr><td>global_attribute_changes</td><td>info</td><td>Global lemma attributes should not be changed temporarily, use <code>declare</code> instead.</td><td>Changing lemma attributes (e.g. <code>simp</code>) to to accomodate to a local proofdiscouraged, as it is error-prone and might result in hard-to debug problems.<br /><br />
+<tr><td>global_attribute_changes</td><td>info</td><td>Global lemma attributes should not be changed temporarily, use <code>declare</code> instead.</td><td>Changing lemma attributes (e.g. <code>simp</code>) to to accomodate to a local proof discouraged, as it is error-prone and might result in hard-to debug problems.<br /><br />
 Concretely, the lints warns the users of using this pattern:
 
 ```isabelle
@@ -84,7 +84,7 @@ References: http://proofcraft.org/blog/isabelle-style-part2.html</td></tr>
 <code>sledgehammer</code>, <code>solve_direct</code>, <code>try</code>, <code>try0</code></td></tr>
 <tr><td>short_name</td><td>info</td><td>Finds functions or definitions with short names (one character).</td><td>Finds functions or definitions with short names (one character).</td></tr>
 <tr><td>unfinished_proof</td><td>error</td><td>This lint detects unfinished proofs, characterized by the following commands</td><td>This lint detects unfinished proofs, characterized by the following commands:
-<code>sorry</code>, <code>oops</code>, <code>\&ltproof&gt</code></td></tr>
+<code>sorry</code>, <code>\&ltproof&gt</code></td></tr>
 <tr><td>unrestricted_auto</td><td>error</td><td><code>auto</code> should be used as a terminal proof method or be restricted.</td><td>Using auto in the middle of a proof on all goals (i.e. unrestricted) might produce an unpredictable proof state. It should rather be used as a terminal proof method, or be restricted to a set of goals that it fully solves. <br /><br />
 
 References: http://proofcraft.org/blog/isabelle-style.html</td></tr>
