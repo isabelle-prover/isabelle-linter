@@ -283,7 +283,7 @@ object Global_Attribute_Changes extends Proper_Commands_Lint with TokenParsers
   val long_description: Lint_Description =
     Lint_Description.empty
       .add("Changing lemma attributes (e.g. ").inline_code("simp").add(") to to accomodate to a local proof")
-      .add("discouraged, as it is error-prone and might result in hard-to debug problems.")
+      .add(" discouraged, as it is error-prone and might result in hard-to debug problems.")
       .empty_line
       .addln("Concretely, the lints warns the users of using this pattern:")
       .code_block(
@@ -471,7 +471,7 @@ object Unfinished_Proof
   extends Illegal_Command_Lint(
     "Consider finishing the proof.",
     "unfinished_proof",
-    List("sorry", "oops", "\\<proof>"),
+    List("sorry", "\\<proof>"),
     Severity.Error,
     "This lint detects unfinished proofs, characterized by the following commands"
   )
@@ -495,7 +495,7 @@ object Bad_Style_Command
     "Bad style command.",
     "bad_style_command",
     List("back", "apply_end"),
-    Severity.Warn,
+    Severity.Error,
     "This lint detects bad-style commands"
   )
 
