@@ -20,7 +20,7 @@ object Lint_Store
     Bad_Style_Command,
     Complex_Isar_Initial_Method,
     Complex_Method,
-    Counter_Example_Finder,
+    Counter_Example_Finder_Lint,
     Diagnostic_Command,
     Force_Failure,
     Global_Attribute_Changes,
@@ -63,7 +63,7 @@ object Lint_Store
       Set(
         Unfinished_Proof.name,
         Proof_Finder.name,
-        Counter_Example_Finder.name,
+        Counter_Example_Finder_Lint.name,
         Diagnostic_Command.name
       )
     )
@@ -90,7 +90,7 @@ object Lint_Store
         Apply_Isar_Switch.name,
         Bad_Style_Command.name,
         Complex_Isar_Initial_Method.name,
-        Counter_Example_Finder.name,
+        Counter_Example_Finder_Lint.name,
         Complex_Method.name,
         Global_Attribute_Changes.name,
         Global_Attribute_On_Unnamed_Lemma.name,
