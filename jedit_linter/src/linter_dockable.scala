@@ -76,6 +76,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
 
   val separator = XML_Reporter.text("----------------")
   val disabled = XML_Reporter.text("The linter plugin is disabled.")
+  val empty = XML_Reporter.text("No lints found.")
 
   def handle_lint(): Unit =
   {
@@ -99,7 +100,8 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
             if (lint_all && snapshot_lints.nonEmpty) separator ::: snapshot_lints
             else Nil
 
-          command_lints ::: all_lints
+          val res = command_lints ::: all_lints
+          if (res.nonEmpty) res else empty
       }
 
       if (current_output != new_output) {
