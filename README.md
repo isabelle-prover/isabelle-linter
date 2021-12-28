@@ -120,3 +120,14 @@ lemma …
 </td><td>afp, foundational</td></tr>
 <tr><td>use_isar</td><td>info</td><td><code>apply</code>-scripts should be avoided.</td><td>This lint triggers on every use of the <code>apply</code> command and suggests to use an Isar proof instead.</td><td>pedantic</td></tr>
 </table>
+
+## Bundles
+<table>
+<tr><th>Bundle Name</th><th>Lints</th></tr>
+<tr><td>all</td><td>apply_isar_switch, auto_structural_composition, axiomatization_with_where, bad_style_command, complex_isar_initial_method, complex_method, counter_example_finder, diagnostic_command, force_failure, global_attribute_changes, global_attribute_on_unnamed_lemma, implicit_rule, lemma_transforming_attribute, low_level_apply_chain, print_structure, proof_finder, short_name, tactic_proofs, unfinished_proof, unrestricted_auto, use_apply, use_by, use_isar</td></tr>
+<tr><td>default</td><td>apply_isar_switch, axiomatization_with_where, bad_style_command, complex_isar_initial_method, complex_method, counter_example_finder, global_attribute_changes, global_attribute_on_unnamed_lemma, implicit_rule, lemma_transforming_attribute, low_level_apply_chain, tactic_proofs, unrestricted_auto</td></tr>
+<tr><td>afp</td><td>apply_isar_switch, bad_style_command, complex_isar_initial_method, complex_method, counter_example_finder, global_attribute_changes, global_attribute_on_unnamed_lemma, implicit_rule, lemma_transforming_attribute, unrestricted_auto, use_by</td></tr>
+<tr><td>non_interactive</td><td>counter_example_finder, diagnostic_command, proof_finder, unfinished_proof</td></tr>
+<tr><td>foundational</td><td>apply_isar_switch, bad_style_command, complex_isar_initial_method, complex_method, global_attribute_changes, global_attribute_on_unnamed_lemma, implicit_rule, lemma_transforming_attribute, unrestricted_auto, use_by</td></tr>
+<tr><td>pedantic</td><td>auto_structural_composition, force_failure, low_level_apply_chain, short_name, use_isar</td></tr>
+</table>

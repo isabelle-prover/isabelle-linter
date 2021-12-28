@@ -7,10 +7,10 @@ import linter.Linter._
 object Lint_Descriptions
 {
 
-  private def surround(str: String, kind: String): String
+  def surround(str: String, kind: String): String
     = s"<$kind>$str</$kind>"
 
-  private def row(kind: String, cs: String*): String
+  def row(kind: String, cs: String*): String
     = surround(
       cs.map(surround(_, kind)).mkString,
       "tr"
