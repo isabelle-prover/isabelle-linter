@@ -139,7 +139,7 @@ object Lint_Store
   def get_bundle(name: String): Option[Bundle] =
     bundle_store.get(name)
 
-  private val all_bundles =
+  val all_bundles =
     List(
       Bundle.all,
       Bundle.default,
