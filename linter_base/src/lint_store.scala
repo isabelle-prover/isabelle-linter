@@ -43,7 +43,11 @@ object Lint_Store
   for (lint <- all_lints) register_lint(lint)
 
   // bundles
-  case class Bundle(name: String, lint_names: Set[String])
+  case class Bundle(name: String, lint_names: Set[String]) {
+
+    def contains(lint_name : String): Boolean =
+      lint_names.contains(lint_name)
+  }
 
   object Bundle
   {
@@ -136,13 +140,18 @@ object Lint_Store
 
   private val all_bundles =
     List(
+      Bundle.all,
+      Bundle.default,
+      Bundle.afp,
       Bundle.non_interactive,
       Bundle.foundational,
-      Bundle.pedantic,
-      Bundle.default,
-      Bundle.all,
-      Bundle.afp
+      Bundle.pedantic
     )
 
   for (bundle <- all_bundles) register_bundle(bundle)
+
+  def get_bundles_for_lint(lint_name: String): List[String] =
+    all_bundles.tail // Emit the "all" bundle
+      .filter(_.contains(lint_name))
+      .map(_.name)
 }
