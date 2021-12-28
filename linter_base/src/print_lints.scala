@@ -22,7 +22,8 @@ object Lint_Descriptions
       lint.name,
       lint.severity.toString,
       Markdown_Renderer.render(lint.short_description),
-      Markdown_Renderer.render(lint.long_description)
+      Markdown_Renderer.render(lint.long_description),
+      Library.commas(Lint_Store.get_bundles_for_lint(lint.name))
     )
 
   def print_descriptions(
@@ -30,8 +31,8 @@ object Lint_Descriptions
   ): Unit =
   {
     progress.echo("<table>")
-    progress.echo(row("th", "Name", "Severity", "Short description", "Description"))
-    progress.echo(Lint_Store.lints.map(print_lint_line).mkString("\n"))
+    progress.echo(row("th", "Name", "Severity", "Short description", "Description", "Bundles"))
+    progress.echo(Library.cat_lines(Lint_Store.lints.map(print_lint_line)))
     progress.echo("</table>")
   }
 
