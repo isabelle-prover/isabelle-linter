@@ -120,7 +120,8 @@ object Lint_Store
         Complex_Isar_Initial_Method.name,
         Global_Attribute_Changes.name,
         Complex_Method.name,
-        Tactic_Proofs.name
+        Tactic_Proofs.name,
+        Counter_Example_Finder_Lint.name,
       )
     )
 
