@@ -11,7 +11,7 @@ For stand-alone (cli) tool only, add the component `<REPO_DIR>/linter_base` **in
 
 ## Usage
 Automatically starts with jEdit. On windows, start jEdit in the `Cygwin-Terminal` with `isabelle jedit`. 
-Configuration can be done via the `Linter` panel and/or Isabelle [options](etc/options).
+Configuration can be done via the `Linter` panel and/or Isabelle options ([base](linter_base/etc/options), [jedit](jedit_linter/etc/options)).
 
 CLI usage: `isabelle lint -?`.
 
