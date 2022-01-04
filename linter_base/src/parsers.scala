@@ -11,12 +11,12 @@ object TokenParsers extends TokenParsers
 
   case class IndexPosition(ts: List[Text.Info[Token]], i: Int) extends input.Position
   {
-    def column: Int = ts.slice(0, i + 1).map(_.info.content.length).sum
+    def column: Int = ts.slice(0, i + 1).map(_.info.source.length).sum
 
     def line: Int = 0
 
     protected def lineContents: String = (ts map {
-      _.info.content
+      _.info.source
     }).mkString
   }
 
