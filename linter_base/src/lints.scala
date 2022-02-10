@@ -204,8 +204,8 @@ object Unrestricted_Auto extends Proper_Commands_Lint
       .add("proof method, or be restricted to a set of goals that it fully solves. ")
       .references("http://proofcraft.org/blog/isabelle-style.html")
 
-  private def is_terminal(command: Parsed_Command): Boolean =
-    List("sorry", "oops", "done", "\\<proof>").contains(command.kind)
+  private def is_proof_command(command: Parsed_Command): Boolean =
+    List("apply", "by", "proof").contains(command.kind)
 
   private def are_unrestricted(modifiers: List[Method.Modifier]): Boolean =
     !modifiers.exists(_.isInstanceOf[Method.Modifier.Restrict])
@@ -236,7 +236,7 @@ object Unrestricted_Auto extends Proper_Commands_Lint
   def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
     commands match {
       case (apply@Parsed_Command("apply")) :: next_command :: next
-        if !is_terminal(next_command) && is_unrestricted_auto(apply.ast_node.info) =>
+        if is_proof_command(next_command) && is_unrestricted_auto(apply.ast_node.info) =>
         lint_proper(next_command :: next, report_lint(apply, report))
       case _ :: next => lint_proper(next, report)
       case Nil => report
