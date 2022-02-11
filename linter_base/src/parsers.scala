@@ -227,6 +227,13 @@ trait TokenParsers extends Parsers
       case proofToken ~ None => Text.Info(proofToken.range, Isar_Proof(None))
     }
 
+  def pQed: Parser[Text.Info[ASTNode]] = pCommand("qed") ~ pMethod.? ^^ {
+    case qedToken ~ Some(method) =>
+      Text.Info(Text.Range(qedToken.range.start, method.range.stop), Qed(Some(method)))
+    case qedToken ~ None =>
+      Text.Info(Text.Range(qedToken.range.start, qedToken.range.stop), Qed(None))
+  }
+
   def pBy: Parser[Text.Info[ASTNode]] =
     pCommand("by") ~ pMethod ~ pMethod.? ^^ {
       case by ~ method1 ~ method2 =>
@@ -256,7 +263,7 @@ trait TokenParsers extends Parsers
 
   def pAny: Parser[Elem] = elem("any", _ => true)
 
-  def tokenParser: Parser[Text.Info[ASTNode]] = pApply | pIsarProof | pBy | pCounterExampleCommand
+  def tokenParser: Parser[Text.Info[ASTNode]] = pApply | pIsarProof | pBy | pCounterExampleCommand | pQed
 
   def tryTransform[T](
     p: Parser[T],
