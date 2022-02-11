@@ -54,6 +54,7 @@ case class Isar_Proof(method: Option[Text.Info[Method]]) extends Proof
 case class By(method1: Text.Info[Method], method2: Option[Text.Info[Method]])
   extends Proof
 
+case class Qed(method: Option[Text.Info[Method]]) extends  Proof
 
 case class Counter_Example_Finder(
   name: Text.Info[Token],
