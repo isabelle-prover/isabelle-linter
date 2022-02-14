@@ -28,8 +28,7 @@ object Linter_Tool
       val node_name = Resources.file_node(Path.explode(thy_file), theory = theory)
 
       val thy_xml = read_xml(Export.MARKUP)
-      val c = File.read(Path.explode("linter_test_"+node_name.theory))
-      val command_spans = Token_Markup.from_xml(thy_xml, c)
+      val command_spans = Token_Markup.from_xml(thy_xml)
 
       val counter = Counter.make()
 
