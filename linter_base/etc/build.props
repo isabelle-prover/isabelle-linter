@@ -16,6 +16,7 @@ sources = \
   src/markup.scala \
   src/parsers.scala \
   src/reporter.scala \
+  src/token_markup.scala \
   src/utils.scala
 services = \
   isabelle.linter.Linter_Tool \
