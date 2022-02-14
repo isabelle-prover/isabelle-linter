@@ -70,7 +70,7 @@ object Token_Markup
     }
   }
 
-  def from_xml(thy_xml: XML.Body, c: String): List[Command_Span.Span] = {
+  def from_xml(thy_xml: XML.Body): List[Command_Span.Span] = {
 
     def find_span(t: XML.Tree): Option[String] = t match {
       case XML.Elem(Markup.Command_Span(name), _) => Some(name)
