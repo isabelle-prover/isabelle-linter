@@ -1,6 +1,8 @@
 package isabelle.linter
 
 
+import isabelle.Command.Blobs_Info
+import isabelle.Document._
 import isabelle._
 
 import scala.collection.mutable.ListBuffer
@@ -8,6 +10,54 @@ import scala.collection.mutable.ListBuffer
 
 object Linter_Tool
 {
+  def read_theory(
+    db_context: Sessions.Database_Context,
+    session_hierarchy: List[String],
+    theory: String): Option[Snapshot] =
+  {
+    def read(name: String): Export.Entry =
+      db_context.get_export(session_hierarchy, theory, name)
+
+    def read_xml(name: String): XML.Body =
+      YXML.parse_body(
+        Symbol.output(unicode_symbols = false, UTF8.decode_permissive(read(name).uncompressed)),
+        cache = db_context.cache)
+
+    split_lines(read(Export.FILES).text).headOption map
+    { thy_file =>
+      val node_name = Resources.file_node(Path.explode(thy_file), theory = theory)
+
+      val thy_xml = read_xml(Export.MARKUP)
+      val c = File.read(Path.explode("linter_test_"+node_name.theory))
+      val command_spans = Token_Markup.from_xml(thy_xml, c)
+
+      val counter = Counter.make()
+
+      val (state0, node_edits, commands, _) = command_spans.foldLeft(State.init,
+        List.empty[Text.Edit], List.empty[Command], 0) {
+          case ((st, ed, cmd, offset), command_span) =>
+            val command = Command(counter(), node_name, Blobs_Info.none, command_span)
+            (st.define_command(command), ed :+ Text.Edit.insert(offset, command.source),
+              cmd :+ command, offset + command.length)
+        }
+
+      val version = Version.init
+      val nodes0 = version.nodes
+      val nodes1 = nodes0 + (node_name -> nodes0(node_name).update_commands(Linear_Set.from(commands)))
+      val version1 = Version.make(nodes1)
+
+      val edits: List[Edit_Text] =
+        List(node_name -> Node.Edits(node_edits))
+
+      val state1 =
+        state0.continue_history(Future.value(version), edits, Future.value(version1))
+          .define_version(version1, state0.the_assignment(version))
+          .assign(version1.id, Nil, commands.map(c => c.id -> List(Document_ID.make())))._2
+
+      state1.snapshot(node_name = node_name)
+    }
+  }
+
 
   abstract class Lint_CLI
   {
@@ -16,9 +66,9 @@ object Linter_Tool
 
     def get_linter_variable: Linter_Variable
 
-    def process_args(
+    def process_snapshot(
       linter: Linter_Interface,
-      args: Dump.Args,
+      snapshot: Snapshot,
       progress: Progress
     ): Unit = ()
 
@@ -39,33 +89,47 @@ object Linter_Tool
     ): Unit =
     {
 
-      val context =
-        Dump.Context(
-          options,
+      val res =
+        Build.build(
+          options = options,
           progress = if (verbose) new Console_Progress(verbose = verbose_all) else new Progress,
           dirs = dirs,
-          selection = selection,
-          skip_base = true
+          selection = selection
         )
+      if (!res.ok) error("Failed to build: " + res.toString)
 
       val linter_variable = get_linter_variable
       linter_variable.update(options + "linter=true")
 
       val linter = linter_variable.get.get
 
-      context.build_logic(logic)
-      context
-        .sessions(logic, log = log)
-        .foreach(_.process((args: Dump.Args) => {
-          progress.echo_if(verbose, "Processing theory " + args.print_node + " ...")
-          val base_session_name = Long_Name.explode(args.print_node).head
-          if (base_session_name == session_name) {
-            process_args(linter, args, progress)
-          } else
-            progress.echo_if(verbose, "Skipping " + args.print_node + " (session mismatch) ...")
+      val store = Sessions.store(options)
 
-        }))
-      context.check_errors
+      using(store.open_database_context())(db_context => {
+        val result =
+          db_context.input_database(session_name)((db, _) => {
+            val theories = store.read_theories(db, session_name)
+            val errors = store.read_errors(db, session_name)
+            store.read_build(db, session_name).map(info => (theories, errors, info.return_code))
+          })
+        result match {
+          case None => error("Missing build database for session " + quote(session_name))
+          case Some((used_theories, errors, _)) =>
+            if (errors.nonEmpty) error(errors.mkString("\n\n"))
+            for {
+              thy <- used_theories
+              if thy.startsWith("HOL")
+            } {
+              val thy_heading = "\nTheory " + quote(thy) + ":"
+              read_theory(db_context, List(session_name), thy) match {
+                case None => progress.echo(thy_heading + " MISSING")
+                case Some(snapshot) =>
+                  progress.echo_if(verbose, "Processing theory " + snapshot.node_name.toString + " ...")
+                  process_snapshot(linter, snapshot, progress)
+              }
+            }
+        }
+      })
       process_end(progress)
     }
   }
@@ -81,19 +145,19 @@ object Linter_Tool
     def get_linter_variable: Linter_Variable =
       new Linter_Variable(cache = false)
 
-    override def process_args(
+    override def process_snapshot(
       linter: Linter_Interface,
-      args: Dump.Args,
+      snapshot: Snapshot,
       progress: Progress
     ): Unit =
     {
       val start_date = Date.now()
-      val result = linter.lint_report(args.snapshot)
+      val result = linter.lint_report(snapshot)
       val report = reporter.report_for_snapshot(result)
       val end_date = Date.now()
       val timing = end_date.time - start_date.time
       reports += JSON.Object(
-        "theory" -> args.print_node,
+        "theory" -> snapshot.node_name.toString,
         "report" -> report,
         "timing" -> timing.ms
       )
@@ -122,14 +186,14 @@ object Linter_Tool
     override def get_linter_variable: Linter_Variable =
       new Linter_Variable(cache = false)
 
-    override def process_args(
+    override def process_snapshot(
       linter: Linter_Interface,
-      args: Dump.Args,
+      snapshot: Snapshot,
       progress: Progress
     ): Unit =
     {
-      progress.echo(args.print_node + ":")
-      val result = linter.lint_report(args.snapshot)
+      progress.echo(snapshot.node_name.toString + ":")
+      val result = linter.lint_report(snapshot)
       val report = reporter.report_for_snapshot(result)
       if (report.isEmpty)
         progress.echo("No lints found.")
@@ -151,19 +215,19 @@ object Linter_Tool
     override def get_linter_variable: Linter_Variable =
       new Linter_Variable(cache = false)
 
-    override def process_args(
+    override def process_snapshot(
       linter: Linter_Interface,
-      args: Dump.Args,
+      snapshot: Snapshot,
       progress: Progress
     ): Unit =
     {
       val start_date = Date.now()
-      val result = linter.lint_report(args.snapshot)
+      val result = linter.lint_report(snapshot)
       val report = reporter.report_for_snapshot(result)
       val end_date = Date.now()
       val timing = end_date.time - start_date.time
       reports += XML.Elem(
-        Markup("report", Linter_Markup.Theory(args.print_node) ::: Linter_Markup.Timing(timing.ms)),
+        Markup("report", Linter_Markup.Theory(snapshot.node_name.toString) ::: Linter_Markup.Timing(timing.ms)),
         report
       )
     }
@@ -197,9 +261,11 @@ object Linter_Tool
       "lint theory sources based on PIDE markup",
       Scala_Project.here,
       args => {
+        val build_options = Word.explode(Isabelle_System.getenv("ISABELLE_BUILD_OPTIONS"))
+
         var dirs: List[Path] = Nil
         var logic = Dump.default_logic
-        var options = Options.init()
+        var options = Options.init(opts = build_options)
         var verbose = false
         var verbose_all = false
         var mode = "text"
@@ -249,6 +315,12 @@ Usage: isabelle lint [OPTIONS] SESSION
           case "xml" => new Lint_XML()
           case _ => error(s"Unrecognized reporting mode $mode")
         }
+
+        val res = Build.build(
+          options = options,
+          selection = Sessions.Selection(sessions = List(session_name)),
+          progress = progress,
+        )
 
         progress.interrupt_handler {
           lint(
