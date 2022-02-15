@@ -47,10 +47,15 @@ object Token_Markup
         case Entity.Ref(_) => mk_ident(body)
         case _ => body.flatMap(map_tokens)
       }
-      case XML.Elem(Markup(KEYWORD2, _), body) => mk_token(Kind.KEYWORD, body)
+      case XML.Elem(Markup(KEYWORD2, _), body) => body match {
+        case List(XML.Elem(Markup(ENTITY, Markup.Kind(COMMAND)), body1)) => mk_token(Kind.COMMAND, body1)
+        case _ => mk_token(Kind.KEYWORD, body)
+      }
+      case XML.Elem(Markup(ALT_STRING, _), body) => mk_token(Kind.ALT_STRING, body)
       case XML.Elem(Markup(STRING, _), body) => mk_token(Kind.STRING, body)
       case XML.Elem(Markup(DELIMITER, _), body) =>
-        if(List("-", "_").contains(XML.content(body))) mk_token(Kind.SYM_IDENT, body)
+        if (List("-", "_").contains(XML.content(body))) mk_token(Kind.SYM_IDENT, body)
+        else if (XML.content(body).contains(Symbol.sub)) mk_token(Kind.IDENT, body)
         else mk_token(Kind.KEYWORD, body)
       case XML.Text(t) => Token.explode(Keyword.Keywords.empty, t)
       case XML.Elem(Markup(LANGUAGE, props), body) => props match {
@@ -66,7 +71,8 @@ object Token_Markup
       case XML.Elem(Markup(SKOLEM, _), body) => mk_ident(body)
       case XML.Elem(Markup(WARNING, _), body) => body.flatMap(map_tokens)
       case XML.Elem(Markup(CLASS_PARAMETER, _), body) => mk_ident(body)
-      case t => error("Unexpected markup: " + t + " for " + XML.content(t))
+      case XML.Elem(Markup(EXPORT_PATH, _), body) => body.flatMap(map_tokens)
+      case t => mk_token(Kind.UNPARSED, List(t))
     }
   }
 
