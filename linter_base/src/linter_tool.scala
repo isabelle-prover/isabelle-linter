@@ -102,12 +102,15 @@ object Linter_Tool
 
       val linter = linter_variable.get.get
 
+      val full_sessions = Sessions.load_structure(options = options, dirs = dirs)
+      val deps = Sessions.deps(full_sessions.selection(selection))
+      val theories = deps.get(session_name).get.session_theories.map(_.theory)
+
       val store = Sessions.store(options)
 
       using(store.open_database_context())(db_context => {
         val result =
           db_context.input_database(session_name)((db, _) => {
-            val theories = store.read_theories(db, session_name)
             val errors = store.read_errors(db, session_name)
             store.read_build(db, session_name).map(info => (theories, errors, info.return_code))
           })
@@ -117,7 +120,6 @@ object Linter_Tool
             if (errors.nonEmpty) error(errors.mkString("\n\n"))
             for {
               thy <- used_theories
-              if thy.startsWith("HOL")
             } {
               val thy_heading = "\nTheory " + quote(thy) + ":"
               read_theory(db_context, List(session_name), thy) match {
@@ -314,12 +316,6 @@ Usage: isabelle lint [OPTIONS] SESSION
           case "xml" => new Lint_XML()
           case _ => error(s"Unrecognized reporting mode $mode")
         }
-
-        val res = Build.build(
-          options = options,
-          selection = Sessions.Selection(sessions = List(session_name)),
-          progress = progress,
-        )
 
         progress.interrupt_handler {
           lint(
