@@ -5,7 +5,7 @@ import java.lang.reflect.{Field, Modifier}
 
 import isabelle._
 import isabelle.jedit._
-import isabelle.linter._
+import isabelle.linter.{Token_Markup => _, _}
 
 import org.gjt.sp.jedit.View
 import org.gjt.sp.jedit.textarea.TextArea
