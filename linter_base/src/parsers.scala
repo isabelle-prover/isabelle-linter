@@ -9,25 +9,14 @@ import Linter._
 object TokenParsers extends TokenParsers
 {
 
-  case class IndexPosition(ts: List[Text.Info[Token]], i: Int) extends input.Position
-  {
-    def column: Int = ts.slice(0, i + 1).map(_.info.source.length).sum
-
-    def line: Int = 0
-
-    protected def lineContents: String = (ts map {
-      _.info.source
-    }).mkString
-  }
-
-  case class TokenReader(in: List[Text.Info[Token]], from: Int = 0)
+  case class TokenReader(in: List[Text.Info[Token]])
     extends input.Reader[Text.Info[Token]]
   {
     def first: Text.Info[Token] = in.head
 
-    def rest: TokenReader = TokenReader(in.tail, from + 1)
+    def rest: TokenReader = TokenReader(in.tail)
 
-    def pos: input.Position = IndexPosition(in, from)
+    def pos: input.Position = input.NoPosition
 
     def atEnd: Boolean = in.isEmpty
   }

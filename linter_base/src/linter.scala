@@ -75,7 +75,7 @@ object Linter
 
     lazy val ast_node: Text.Info[ASTNode] =
       TokenParsers.parse(TokenParsers.tokenParser, tokens) match {
-        case TokenParsers.Success(result, TokenParsers.TokenReader(Nil, _)) => result
+        case TokenParsers.Success(result, TokenParsers.TokenReader(Nil)) => result
         case TokenParsers.Success(_, next) =>
           Text.Info(range, Failed(s"Failed parsing. $next left"))
         case failure: TokenParsers.NoSuccess => Text.Info(range, Failed(failure.msg))
