@@ -107,23 +107,33 @@ trait TokenParsers extends Parsers
 
   object MethodParsers
   {
-
-    /* Modifiers */
-    def pTry: Parser[Text.Info[Method.Modifier]] = pKeyword("?") ^^ { case Text.Info(range, _) =>
-      Text.Info(range, Method.Modifier.Try)
-    }
-
-    def pRep1: Parser[Text.Info[Method.Modifier]] = pKeyword("+") ^^ { case Text.Info(range, _) =>
-      Text.Info(range, Method.Modifier.Rep1)
-    }
-
-    def pRestrict: Parser[Text.Info[Method.Modifier]] = pSqBracketedExtend(
-      pNat ^^ { case Text.Info(range, n) =>
-        Text.Info(range, Method.Modifier.Restrict(n.content.toInt))
+    def pMethod(isOuter: Boolean = true): Parser[Text.Info[Method]] = {
+      val nameParser = if (isOuter) pNameOnly else pNameArgs
+      (nameParser | pParenedExtend(pMethods)) ~ pModifier.? ^^ { case body ~ modifier =>
+        addModifier(body, modifier)
       }
-    )
+    }
+
+    def pMethods: Parser[Text.Info[Method]] = pSeq
+
+    def pNameArgs: Parser[Text.Info[Method]] = pName ~ pMethodArg.* ^^ { case name ~ args =>
+      Text.Info(
+        list_range(name.range :: args.flatten.map(_.range)),
+        Simple_Method(name, args = args.flatten)
+      )
+    }
+
+    def pNameOnly: Parser[Text.Info[Method]] =
+      pName ^^ (name => Text.Info(name.range, Simple_Method(name)))
 
     def pModifier: Parser[Text.Info[Method.Modifier]] = pTry | pRep1 | pRestrict
+
+    def pAlt: Parser[Text.Info[Method]] =
+      pCombinator("|", Method.Combinator.Alt, pMethod(false))
+
+    def pStruct: Parser[Text.Info[Method]] = pCombinator(";", Method.Combinator.Struct, pAlt)
+
+    def pSeq: Parser[Text.Info[Method]] = pCombinator(",", Method.Combinator.Seq, pStruct)
 
     def pCombinator(
       sep: String,
@@ -141,28 +151,24 @@ trait TokenParsers extends Parsers
         }
       )
 
-    def pAlt: Parser[Text.Info[Method]] =
-      pCombinator("|", Method.Combinator.Alt, pNameArgs | pParened(pMethods))
+    def pTry: Parser[Text.Info[Method.Modifier]] = pKeyword("?") ^^ { case Text.Info(range, _) =>
+      Text.Info(range, Method.Modifier.Try)
+    }
 
-    def pStruct: Parser[Text.Info[Method]] = pCombinator(";", Method.Combinator.Struct, pAlt)
+    def pRep1: Parser[Text.Info[Method.Modifier]] = pKeyword("+") ^^ { case Text.Info(range, _) =>
+      Text.Info(range, Method.Modifier.Rep1)
+    }
 
-    def pSeq: Parser[Text.Info[Method]] = pCombinator(",", Method.Combinator.Seq, pStruct)
+    def pRestrict: Parser[Text.Info[Method.Modifier]] = pSqBracketedExtend(
+      pNat ^^ { case Text.Info(range, n) =>
+        Text.Info(range, Method.Modifier.Restrict(n.content.toInt))
+      }
+    )
 
-    /* Simple Methods */
     def pMethodArg: Parser[List[Elem]] = pArg { token =>
       !(token.is_open_bracket ||
         token.is_close_bracket ||
         (token.is_keyword && "|;,+".exists(token.is_keyword)))
-    }
-
-    def pNameOnly: Parser[Text.Info[Method]] =
-      pName ^^ (name => Text.Info(name.range, Simple_Method(name)))
-
-    def pNameArgs: Parser[Text.Info[Method]] = pName ~ pMethodArg.* ^^ { case name ~ args =>
-      Text.Info(
-        list_range(name.range :: args.flatten.map(_.range)),
-        Simple_Method(name, args = args.flatten)
-      )
     }
 
     def addModifier(
@@ -191,16 +197,9 @@ trait TokenParsers extends Parsers
           }
       }
 
-    /* Method */
-    def pMethod: Parser[Text.Info[Method]] =
-      (pNameOnly | pParenedExtend(pMethods)) ~ pModifier.? ^^ { case body ~ modifier =>
-        addModifier(body, modifier)
-      }
-
-    def pMethods: Parser[Text.Info[Method]] = pSeq
   }
 
-  def pMethod: Parser[Text.Info[Method]] = MethodParsers.pMethod
+  def pMethod: Parser[Text.Info[Method]] = MethodParsers.pMethod()
 
   /* Apply */
   def pApply: Parser[Text.Info[ASTNode]] = pCommand("apply") ~ pMethod ^^ {
