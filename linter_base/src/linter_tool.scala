@@ -290,7 +290,7 @@ object Linter_Tool
 
     val getopts = Getopts(
       """
-Usage: isabelle lint [OPTIONS] SESSION
+Usage: isabelle lint [OPTIONS] [SESSIONS ...]
 
   Options are:
   -B NAME      include session NAME and all descendants
