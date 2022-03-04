@@ -77,60 +77,72 @@ object Linter_Tool
 
     def apply(
       options: Options,
-      logic: String,
-      session_name: String,
-      verbose: Boolean = false,
-      verbose_all: Boolean = false,
+      selection: Sessions.Selection = Sessions.Selection.empty,
       progress: Progress = new Progress,
-      log: Logger = No_Logger,
+      clean_build: Boolean = false,
       dirs: List[Path] = Nil,
-      selection: Sessions.Selection = Sessions.Selection.empty
-    ): Unit =
+      select_dirs: List[Path] = Nil,
+      numa_shuffling: Boolean = false,
+      max_jobs: Int = 1,
+      verbose_build: Boolean = false,
+      verbose: Boolean = false,
+      log: Logger = No_Logger): Unit =
     {
-
       val res =
-        Build.build(
-          options = options,
-          progress = if (verbose) new Console_Progress(verbose = verbose_all) else new Progress,
+        Build.build(options,
+          selection,
+          progress = progress,
+          check_unknown_files = Mercurial.is_repository(Path.ISABELLE_HOME),
+          clean_build = clean_build,
           dirs = dirs,
-          selection = selection
-        )
-      if (!res.ok) error("Failed to build: " + res.toString)
+          select_dirs = select_dirs,
+          numa_shuffling = NUMA.enabled_warning(progress, numa_shuffling),
+          max_jobs = max_jobs,
+          verbose = verbose_build)
+      if (!res.ok) System.exit(res.rc)
 
       val linter_variable = get_linter_variable
       linter_variable.update(options + "linter=true")
 
       val linter = linter_variable.get.get
 
-      val full_sessions = Sessions.load_structure(options = options, dirs = dirs)
+      val full_sessions =
+        Sessions.load_structure(options = options, dirs = dirs, select_dirs = select_dirs)
+
       val deps = Sessions.deps(full_sessions.selection(selection))
-      val theories = deps.get(session_name).get.session_theories.map(_.theory)
 
-      val store = Sessions.store(options)
+      full_sessions.imports_selection(selection).foreach { session_name =>
+        progress.echo("Linting " + session_name)
 
-      using(store.open_database_context())(db_context => {
-        val result =
-          db_context.input_database(session_name)((db, _) => {
-            val errors = store.read_errors(db, session_name)
-            store.read_build(db, session_name).map(info => (theories, errors, info.return_code))
-          })
-        result match {
-          case None => error("Missing build database for session " + quote(session_name))
-          case Some((used_theories, errors, _)) =>
-            if (errors.nonEmpty) error(errors.mkString("\n\n"))
-            for {
-              thy <- used_theories
-            } {
-              val thy_heading = "\nTheory " + quote(thy) + ":"
-              read_theory(db_context, List(session_name), thy) match {
-                case None => progress.echo(thy_heading + " MISSING")
-                case Some(snapshot) =>
-                  progress.echo_if(verbose, "Processing theory " + snapshot.node_name.toString + " ...")
-                  process_snapshot(linter, snapshot, progress)
+        val theories = deps.get(session_name).get.session_theories.map(_.theory)
+
+        val store = Sessions.store(options)
+
+        using(store.open_database_context())(db_context => {
+          val result =
+            db_context.input_database(session_name)((db, _) => {
+              val errors = store.read_errors(db, session_name)
+              store.read_build(db, session_name).map(info => (theories, errors, info.return_code))
+            })
+          result match {
+            case None => error("Missing build database for session " + quote(session_name))
+            case Some((used_theories, errors, _)) =>
+              if (errors.nonEmpty) error(errors.mkString("\n\n"))
+              for {
+                thy <- used_theories
+              } {
+                val thy_heading = "\nTheory " + quote(thy) + ":"
+                read_theory(db_context, List(session_name), thy) match {
+                  case None => progress.echo(thy_heading + " MISSING")
+                  case Some(snapshot) =>
+                    progress.echo_if(verbose, "Processing theory " + snapshot.node_name.toString + " ...")
+                    process_snapshot(linter, snapshot, progress)
+                }
               }
-            }
-        }
-      })
+          }
+        })
+      }
+
       process_end(progress)
     }
   }
@@ -250,89 +262,109 @@ object Linter_Tool
     val configuration = linter_variable.get.get.configuration
 
     progress.echo(commas(configuration.get_lints.map(_.name).sorted))
-
-    sys.exit(0)
   }
 
   /* Isabelle tool wrapper */
 
-  val isabelle_tool =
-    Isabelle_Tool(
-      "lint",
-      "lint theory sources based on PIDE markup",
-      Scala_Project.here,
-      args => {
-        val build_options = Word.explode(Isabelle_System.getenv("ISABELLE_BUILD_OPTIONS"))
+  val isabelle_tool = Isabelle_Tool("lint", "lint theory sources based on PIDE markup",
+    Scala_Project.here, args =>
+  {
+    val build_options = Word.explode(Isabelle_System.getenv("ISABELLE_BUILD_OPTIONS"))
 
-        var dirs: List[Path] = Nil
-        var logic = Dump.default_logic
-        var options = Options.init(opts = build_options)
-        var verbose = false
-        var verbose_all = false
-        var mode = "text"
-        var list = false
+    var base_sessions: List[String] = Nil
+    var select_dirs: List[Path] = Nil
+    var numa_shuffling = false
+    var requirements = false
+    var verbose_build = false
+    var exclude_session_groups: List[String] = Nil
+    var all_sessions = false
+    var clean_build = false
+    var dirs: List[Path] = Nil
+    var session_groups: List[String] = Nil
+    var max_jobs = 1
+    var list = false
+    var options = Options.init(opts = build_options)
+    var mode = "text"
+    var verbose = false
+    var exclude_sessions: List[String] = Nil
 
-        val getopts = Getopts(
-          """
+    val getopts = Getopts(
+      """
 Usage: isabelle lint [OPTIONS] SESSION
 
   Options are:
-    -b NAME      base logic image (default """ + isabelle.quote(Dump.default_logic) +
-            """)
-    -d DIR       include session directory
-    -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
-    -v           verbose
-    -V           verbose (General)
-    -r MODE      how to report results (either "text", "json" or "xml", default "text")
-    -l           list the enabled lints (does not run the linter)
+  -B NAME      include session NAME and all descendants
+  -D DIR       include session directory and select its sessions
+  -N           cyclic shuffling of NUMA CPU nodes (performance tuning)
+  -R           refer to requirements of selected sessions
+  -V           verbose build
+  -X NAME      exclude sessions from group NAME and all descendants
+  -a           select all sessions
+  -c           clean build
+  -d DIR       include session directory
+  -g NAME      select session group NAME
+  -j INT       maximum number of parallel jobs (default 1)
+  -l           list the enabled lints (does not run the linter)
+  -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
+  -r MODE      how to report results (either "text", "json" or "xml", default "text")
+  -v           verbose
+  -x NAME      exclude session NAME and all descendants
 
-  Lint isabelle theories.
+Lint isabelle theories.
 """,
-          "b:" -> (arg => logic = arg),
-          "d:" -> (arg => dirs = dirs ::: List(Path.explode(arg))),
-          "o:" -> (arg => options = options + arg),
-          "v" -> (_ => verbose = true),
-          "V" -> (_ => verbose_all = true),
-          "r:" -> (arg => mode = arg),
-          "l" -> (_ => list = true)
-        )
+      "B:" -> (arg => base_sessions = base_sessions ::: List(arg)),
+      "D:" -> (arg => select_dirs = select_dirs ::: List(Path.explode(arg))),
+      "N" -> (_ => numa_shuffling = true),
+      "R" -> (_ => requirements = true),
+      "V" -> (_ => verbose_build = true),
+      "X:" -> (arg => exclude_session_groups = exclude_session_groups ::: List(arg)),
+      "a" -> (_ => all_sessions = true),
+      "c" -> (_ => clean_build = true),
+      "d:" -> (arg => dirs = dirs ::: List(Path.explode(arg))),
+      "g:" -> (arg => session_groups = session_groups ::: List(arg)),
+      "j:" -> (arg => max_jobs = Value.Int.parse(arg)),
+      "l" -> (_ => list = true),
+      "o:" -> (arg => options = options + arg),
+      "r:" -> (arg => mode = arg),
+      "v" -> (_ => verbose = true),
+      "x:" -> (arg => exclude_sessions = exclude_sessions ::: List(arg)))
 
-        val more_args = getopts(args)
+    val sessions = getopts(args)
 
-        val progress = new Console_Progress(verbose = verbose)
+    val progress = new Console_Progress(verbose = verbose_build)
 
-        if (list)
-          list_lints(options, progress)
+    if (list) list_lints(options, progress)
+    else {
 
-        val session_name =
-          more_args match {
-            case List(session_name) => session_name
-            case _ => getopts.usage()
-          }
-
-        val lint = mode match {
-          case "text" => Lint_Text
-          case "json" => new Lint_JSON()
-          case "xml" => new Lint_XML()
-          case _ => error(s"Unrecognized reporting mode $mode")
-        }
-
-        progress.interrupt_handler {
-          lint(
-            options,
-            logic,
-            session_name,
-            verbose = verbose,
-            verbose_all = verbose_all,
-            progress = progress,
-            dirs = dirs,
-            selection = Sessions.Selection(
-              sessions = List(session_name)
-            )
-          )
-        }
+      val lint = mode match {
+        case "text" => Lint_Text
+        case "json" => new Lint_JSON()
+        case "xml" => new Lint_XML()
+        case _ => error(s"Unrecognized reporting mode $mode")
       }
-    )
+
+      progress.interrupt_handler {
+        lint(
+          options,
+          selection = Sessions.Selection(
+            requirements = requirements,
+            all_sessions = all_sessions,
+            base_sessions = base_sessions,
+            exclude_session_groups = exclude_session_groups,
+            exclude_sessions = exclude_sessions,
+            session_groups = session_groups,
+            sessions = sessions),
+          progress = progress,
+          clean_build = clean_build,
+          dirs = dirs,
+          select_dirs = select_dirs,
+          numa_shuffling = numa_shuffling,
+          max_jobs = max_jobs,
+          verbose_build = verbose_build,
+          verbose = verbose)
+      }
+    }
+  })
 }
 
 class Linter_Tool extends Isabelle_Scala_Tools(Linter_Tool.isabelle_tool)
