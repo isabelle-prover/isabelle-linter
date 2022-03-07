@@ -1,5 +1,5 @@
 title = Isabelle/Linter
-module = $ISABELLE_HOME/lib/classes/isabelle_linter_plugin.jar
+module = $JEDIT_LINTER_HOME/lib/classes/isabelle_linter_plugin.jar
 requirements = \
   env:ISABELLE_SCALA_JAR \
   env:JEDIT_JARS \
