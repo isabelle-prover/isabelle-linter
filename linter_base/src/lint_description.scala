@@ -1,6 +1,13 @@
+/* Author: Yecine Megdiche, TU Muenchen
+
+Styled lint description elements.
+ */
+
 package isabelle.linter
 
+
 import isabelle._
+
 
 object Lint_Description
 {
@@ -43,11 +50,11 @@ case class Lint_Description(rev_els: List[Description_Element])
     add(Empty_Line())
 }
 
+/* textual rendering */
 
 abstract class Lint_Description_Renderer
 {
   def render(e: Description_Element): String
-
 
   def render(description: Lint_Description): String =
     description.rev_els.reverse.map(render).mkString

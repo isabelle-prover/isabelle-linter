@@ -1,11 +1,17 @@
+/* Author: Yecine Megdiche, TU Muenchen
+
+Global registration for lints.
+ */
+
 package isabelle.linter
+
 
 import Linter._
 import scala.collection.mutable.Map
 
+
 object Lint_Store
 {
-
   private val store: Map[String, Lint] = Map.empty
 
   def register_lint(lint: Lint): Unit =
@@ -35,8 +41,7 @@ object Lint_Store
     Unrestricted_Auto,
     Use_Apply,
     Use_By,
-    Use_Isar,
-  )
+    Use_Isar)
 
   private val all_lints: List[Lint] = Print_AST :: lints
 
@@ -51,31 +56,20 @@ object Lint_Store
 
   object Bundle
   {
+    val pedantic = Bundle("pedantic", Set(
+      Low_Level_Apply_Chain.name,
+      Use_Isar.name,
+      Short_Name.name,
+      Force_Failure.name,
+      Auto_Structural_Composition.name))
 
-    val pedantic = Bundle(
-      "pedantic",
-      Set(
-        Low_Level_Apply_Chain.name,
-        Use_Isar.name,
-        Short_Name.name,
-        Force_Failure.name,
-        Auto_Structural_Composition.name
-      )
-    )
-
-    val non_interactive = Bundle(
-      "non_interactive",
-      Set(
+    val non_interactive = Bundle("non_interactive", Set(
         Unfinished_Proof.name,
         Proof_Finder.name,
         Counter_Example_Finder_Lint.name,
-        Diagnostic_Command.name
-      )
-    )
+        Diagnostic_Command.name))
 
-    val foundational = Bundle(
-      "foundational",
-      Set(
+    val foundational = Bundle("foundational", Set(
         Apply_Isar_Switch.name,
         Bad_Style_Command.name,
         Complex_Isar_Initial_Method.name,
@@ -85,13 +79,9 @@ object Lint_Store
         Lemma_Transforming_Attribute.name,
         Implicit_Rule.name,
         Unrestricted_Auto.name,
-        Use_By.name
-      )
-    )
+        Use_By.name))
 
-    val afp = Bundle(
-      "afp",
-      Set(
+    val afp = Bundle("afp", Set(
         Apply_Isar_Switch.name,
         Bad_Style_Command.name,
         Complex_Isar_Initial_Method.name,
@@ -102,13 +92,9 @@ object Lint_Store
         Lemma_Transforming_Attribute.name,
         Implicit_Rule.name,
         Unrestricted_Auto.name,
-        Use_By.name
-      )
-    )
+        Use_By.name))
 
-    val default = Bundle(
-      "default",
-      Set(
+    val default = Bundle("default", Set(
         Apply_Isar_Switch.name,
         Unrestricted_Auto.name,
         Low_Level_Apply_Chain.name,
@@ -121,14 +107,9 @@ object Lint_Store
         Global_Attribute_Changes.name,
         Complex_Method.name,
         Tactic_Proofs.name,
-        Counter_Example_Finder_Lint.name,
-      )
-    )
+        Counter_Example_Finder_Lint.name))
 
-    val all = Bundle(
-      "all",
-      all_lints.map(_.name).toSet
-    )
+    val all = Bundle("all", all_lints.map(_.name).toSet)
   }
 
   val bundle_store: Map[String, Bundle] = Map.empty
@@ -139,15 +120,13 @@ object Lint_Store
   def get_bundle(name: String): Option[Bundle] =
     bundle_store.get(name)
 
-  val all_bundles =
-    List(
-      Bundle.all,
-      Bundle.default,
-      Bundle.afp,
-      Bundle.non_interactive,
-      Bundle.foundational,
-      Bundle.pedantic
-    )
+  val all_bundles = List(
+    Bundle.all,
+    Bundle.default,
+    Bundle.afp,
+    Bundle.non_interactive,
+    Bundle.foundational,
+    Bundle.pedantic)
 
   for (bundle <- all_bundles) register_bundle(bundle)
 

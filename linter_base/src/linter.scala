@@ -1,16 +1,19 @@
+/* Author: Yecine Megdiche, TU Muenchen
+
+Isabelle linter.
+ */
+
 package isabelle.linter
 
+
 import isabelle._
+
 
 object Linter
 {
 
-  def lint(
-    snapshot: Document.Snapshot,
-    configuration: Linter_Configuration
-  ): Lint_Report =
+  def lint(snapshot: Document.Snapshot, configuration: Linter_Configuration): Lint_Report =
   {
-
     val parsed_commands = snapshot.node
       .command_iterator()
       .map { case (command, offset) => Parsed_Command(command, offset, snapshot) }
@@ -60,7 +63,7 @@ object Linter
     def generate_positions(
       tokens: List[Token],
       start_offset: Text.Offset
-    ): List[Text.Info[Token]] = Utils.mapAccumL[Token, Text.Offset, Text.Info[Token]](
+    ): List[Text.Info[Token]] = Utils.map_accum_l[Token, Text.Offset, Text.Info[Token]](
       tokens,
       start_offset,
       {
@@ -73,12 +76,12 @@ object Linter
     val tokens: List[Text.Info[Token]] =
       generate_positions(command.span.content, offset)
 
-    lazy val ast_node: Text.Info[ASTNode] =
-      TokenParsers.parse(TokenParsers.tokenParser, tokens) match {
-        case TokenParsers.Success(result, TokenParsers.TokenReader(Nil)) => result
-        case TokenParsers.Success(_, next) =>
+    lazy val ast_node: Text.Info[AST_Node] =
+      Token_Parsers.parse(Token_Parsers.token_parser, tokens) match {
+        case Token_Parsers.Success(result, Token_Parsers.Token_Reader(Nil)) => result
+        case Token_Parsers.Success(_, next) =>
           Text.Info(range, Failed(s"Failed parsing. $next left"))
-        case failure: TokenParsers.NoSuccess => Text.Info(range, Failed(failure.msg))
+        case failure: Token_Parsers.NoSuccess => Text.Info(range, Failed(failure.msg))
       }
 
   }
@@ -243,7 +246,7 @@ object Linter
     def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result]
   }
 
-  abstract class Parser_Lint extends Single_Command_Lint with TokenParsers
+  abstract class Parser_Lint extends Single_Command_Lint with Token_Parsers
   {
 
     def parser(report: Reporter): Parser[Some[Lint_Result]]
@@ -285,7 +288,7 @@ object Linter
       }
 
     def lint_ast_node(
-      elem: Text.Info[ASTNode],
+      elem: Text.Info[AST_Node],
       report: Reporter
     ): Option[Lint_Result] =
       elem.info match {

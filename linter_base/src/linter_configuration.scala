@@ -1,4 +1,10 @@
+/* Author: Yecine Megdiche, TU Munich
+
+Configuration of enabled lints.
+ */
+
 package isabelle.linter
+
 
 object Linter_Configuration
 {

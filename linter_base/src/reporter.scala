@@ -1,6 +1,12 @@
+/* Author: Yecine Megdiche, TU Muenchen
+
+Lint reporting in different formats.
+ */
 package isabelle.linter
 
+
 import isabelle._
+
 
 trait Reporter[A]
 {
@@ -31,8 +37,7 @@ object JSON_Reporter extends Reporter[JSON.T]
           "startOffset" -> edit.range.start,
           "stopOffset" -> edit.range.stop,
           "replacement" -> edit.replacement,
-          "msg" -> edit.msg.orNull
-        )
+          "msg" -> edit.msg.orNull)
       }).orNull
   )
 }
@@ -68,19 +73,15 @@ object Text_Reporter extends Reporter[String]
       case Some(edit) => s"Suggestion: ${edit.message}"
     }
 
-    s"""|At ${position.print}:                [${lint_result.lint_name}]
-        |  ${lint_result.message}
-        |  Severity: ${lint_result.severity}
-        |
-        |$snippet
-        |
-        |  $edit
-        |""".stripMargin
+    "At " + position.print + ":                [" + lint_result.lint_name + "}]\n  " +
+      lint_result.message + "\n" +
+      "  Severity: " + lint_result.severity + "\n\n" +
+      snippet + "\n\n" +
+      "  " + edit
   }
 
   private def underline(source: String, range: Text.Range): String =
   {
-
     def underline(line: String, range: Text.Range): (String, Text.Range) =
     {
       val line_range = Text.Range(0, line.length())
@@ -89,7 +90,8 @@ object Text_Reporter extends Reporter[String]
       else if (line_range.apart(range)) {
         val new_range = range - line_range.stop - 1
         (line, new_range)
-      } else {
+      }
+      else {
         val underlined_range = range.restrict(line_range)
         val new_range = Text.Range(0, 0 max (range.stop - line_range.length - 1))
         val underlined =
@@ -99,13 +101,12 @@ object Text_Reporter extends Reporter[String]
 
     }
 
-    Utils.mapAccumL(source.split("\n").toList, range, underline).mkString("\n")
+    Utils.map_accum_l(source.split("\n").toList, range, underline).mkString("\n")
   }
 }
 
 object XML_Reporter extends Reporter[XML.Body]
 {
-
   def report_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): XML.Body =
   {
     val xml = report_lints(lint_report.command_lints(id))
@@ -117,64 +118,58 @@ object XML_Reporter extends Reporter[XML.Body]
     report_lints(
       lint_report.results,
       compact = false,
-      show_descriptions = show_descriptions
-    )
+      show_descriptions = show_descriptions)
 
   private def report_lints(
     lint_results: List[Linter.Lint_Result],
     compact: Boolean = true,
-    show_descriptions: Boolean = false,
-  ): XML.Body =
+    show_descriptions: Boolean = false): XML.Body =
+  {
     lint_results.zipWithIndex
-      .flatMap(ri =>
-        report_lint(
-          ri._1,
-          ri._2,
-          compact = compact,
-          show_descriptions = show_descriptions,
-        )
-      )
+      .flatMap {
+        ri =>
+          report_lint(
+            ri._1,
+            ri._2,
+            compact = compact,
+            show_descriptions = show_descriptions)
+      }
+  }
 
   private def report_lint(
     lint_result: Linter.Lint_Result,
     lint_number: Int = 0,
     compact: Boolean = true,
-    show_descriptions: Boolean = false
-  ): XML.Body =
+    show_descriptions: Boolean = false): XML.Body =
   {
-
     val edit = lint_result.edit match {
       case Some(edit) => text("\n    Consider: ") ::: edit_markup(edit)
       case None => Nil
     }
 
     val inner =
-      if (compact)
-        text(s" ${lint_number + 1}. ${lint_result.message}") ::: edit
-      else
-        (
-          position_markup(lint_result)
-            ::: text(s" ${lint_result.message}")
-            ::: edit
-            ::: text(s"\n    Name: ${lint_result.lint_name}")
-            ::: text(s"\n    Severity: ${lint_result.severity}")
-            :::
-            (if (show_descriptions)
-              text(s"\n    Description: ${XML_Renderer.render(lint_result.short_description)}")
-             else Nil)
-          )
+      if (compact) text(s" ${lint_number + 1}. ${lint_result.message}") ::: edit
+      else {
+        (position_markup(lint_result)
+          ::: text(s" ${lint_result.message}")
+          ::: edit
+          ::: text(s"\n    Name: ${lint_result.lint_name}")
+          ::: text(s"\n    Severity: ${lint_result.severity}")
+          :::
+          (if (show_descriptions)
+            text(s"\n    Description: ${XML_Renderer.render(lint_result.short_description)}")
+           else Nil))
+      }
     add_meta(inner, lint_result)
   }
 
   /* xml helpers */
 
-  def edit_markup(edit: Linter.Edit): XML.Body = XML.Elem(
-    Markup(
-      Linter_Markup.LINTER_SENDBACK,
-      Position.Range(edit.range) ::: Markup.Content(edit.replacement)
-    ),
-    text(edit.message)
-  ) :: Nil
+  def edit_markup(edit: Linter.Edit): XML.Body =
+    XML.Elem(
+      Markup(Linter_Markup.LINTER_SENDBACK,
+        Position.Range(edit.range) ::: Markup.Content(edit.replacement)),
+      text(edit.message)) :: Nil
 
   def position_markup(lint_result: Linter.Lint_Result): XML.Body =
   {
@@ -182,26 +177,21 @@ object XML_Reporter extends Reporter[XML.Body]
       Position.End_Offset(lint_result.range.stop) ::: Position.File(lint_result.commands.head.node_name.node)
     text("At ") ::: XML.Elem(
       Markup(Linter_Markup.GOTO_POSITION, pos),
-      text(lint_result.line_range.start.print)
-    ) :: text(":\n")
+      text(lint_result.line_range.start.print)) :: text(":\n")
   }
 
   def add_meta(body: XML.Body, lint_result: Linter.Lint_Result): XML.Body =
   {
-    XML.Elem(
-      Markup(
-        Linter_Markup.LINT_RESULT,
-        Linter_Markup.Lint_Name(lint_result.lint_name)
-          ::: Linter_Markup.Lint_Message(lint_result.message)
-          ::: Linter_Markup.Lint_Severity(lint_result.severity)
-          ::: Linter_Markup.Lint_Commands(lint_result.commands.map(_.command.id))
-      ),
-      body
-    ) :: Nil
-
+    XML.Elem(Markup(Linter_Markup.LINT_RESULT,
+      Linter_Markup.Lint_Name(lint_result.lint_name)
+        ::: Linter_Markup.Lint_Message(lint_result.message)
+        ::: Linter_Markup.Lint_Severity(lint_result.severity)
+        ::: Linter_Markup.Lint_Commands(lint_result.commands.map(_.command.id))),
+      body) :: Nil
   }
 
-  def text(content: String): XML.Body = XML.Text(content) :: Nil
+  def text(content: String): XML.Body =
+    XML.Text(content) :: Nil
 
   def block(inner: XML.Body): XML.Body =
     XML.elem(Markup.Block.name, inner) :: Nil

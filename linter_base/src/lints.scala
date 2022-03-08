@@ -1,9 +1,16 @@
+/* Author: Yecine Megdiche, TU Muenchen
+
+Implementation of lints for HOL.
+ */
+
 package isabelle.linter
+
 
 import Linter._
 import isabelle._
 
 import scala.annotation.tailrec
+
 
 object Apply_Isar_Switch extends Proper_Commands_Lint
 {
@@ -32,8 +39,7 @@ object Apply_Isar_Switch extends Proper_Commands_Lint
           proof.range,
           None,
           proof,
-          report
-        )
+          report)
         lint_proper(next, new_report)
       case _ :: next => lint_proper(next, report)
       case Nil => report
@@ -56,15 +62,13 @@ object Use_Apply extends  AST_Lint
       .addln("expand the methods. As an example, it helps transform")
       .code_block(
         "lemma …",
-        "  by (induction xs) auto"
-      )
+        "  by (induction xs) auto")
       .add("into")
       .code_block(
         "lemma …",
         "  apply (induction xs)",
         "  apply auto",
-        "done"
-      )
+        "done")
 
   override def lint_proof(proof: Text.Info[Proof], report: Reporter) =
     proof.info match {
@@ -78,7 +82,7 @@ object Use_Apply extends  AST_Lint
 
 }
 
-object Use_By extends Proper_Commands_Lint with TokenParsers
+object Use_By extends Proper_Commands_Lint with Token_Parsers
 {
 
   val name: String = "use_by"
@@ -98,46 +102,44 @@ object Use_By extends Proper_Commands_Lint with TokenParsers
         "lemma …",
         "  apply (induction xs)",
         "  apply auto",
-        "done"
-      )
+        "done")
       .breakline
       .inline_code("by").addln("can be used:")
       .code_block(
         "lemma …",
-        "  by (induction xs) auto"
-      )
+        "  by (induction xs) auto")
 
-  private def removeApply: Parser[String] = (pCommand("apply") ~ pSpace.?) ~> pAny.* ^^ mkString
+  private def removeApply: Parser[String] = (p_command("apply") ~ p_space.?) ~> p_any.* ^^ mk_string
 
-  private def removeBy: Parser[String] = (pCommand("by") ~ pSpace.?) ~> pAny.* ^^ mkString
+  private def removeBy: Parser[String] = (p_command("by") ~ p_space.?) ~> p_any.* ^^ mk_string
 
   private def gen_replacement(
     apply_script: List[Parsed_Command],
-    has_by: Boolean = false
-  ): Option[String] =
+    has_by: Boolean = false): Option[String] =
+  {
     apply_script match {
       case apply1 :: apply2 :: _ :: Nil =>
         for {
-          method1 <- tryTransform(removeApply, apply1, true)
-          method2 <- tryTransform(removeApply, apply2, true)
+          method1 <- try_transform(removeApply, apply1, true)
+          method2 <- try_transform(removeApply, apply2, true)
         } yield s"by $method1 $method2"
       case apply :: _ :: Nil if !has_by =>
         for {
-          method <- tryTransform(removeApply, apply, true)
+          method <- try_transform(removeApply, apply, true)
         } yield s"by $method"
       case apply :: by :: Nil if has_by =>
         for {
-          method1 <- tryTransform(removeApply, apply, true)
-          method2 <- tryTransform(removeBy, by, true)
+          method1 <- try_transform(removeApply, apply, true)
+          method2 <- try_transform(removeBy, by, true)
         } yield s"by $method1 $method2"
       case _ => None
     }
+  }
 
   private def report_lint(
     apply_script: List[Parsed_Command],
     report: Lint_Report,
-    has_by: Boolean = false
-  ): Lint_Report =
+    has_by: Boolean = false): Lint_Report =
   {
     val new_report = for {
       replacement <- gen_replacement(apply_script, has_by)
@@ -218,7 +220,7 @@ object Unrestricted_Auto extends Proper_Commands_Lint
     case _ => false
   }
 
-  private def is_unrestricted_auto(element: ASTNode): Boolean = element match {
+  private def is_unrestricted_auto(element: AST_Node): Boolean = element match {
     case Apply(method) => is_unrestricted_auto__method(method.info)
     case _ => false
   }
@@ -229,8 +231,7 @@ object Unrestricted_Auto extends Proper_Commands_Lint
       apply.range,
       None,
       apply,
-      report
-    )
+      report)
 
   @tailrec
   def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
@@ -245,7 +246,6 @@ object Unrestricted_Auto extends Proper_Commands_Lint
 
 object Low_Level_Apply_Chain extends Proper_Commands_Lint
 {
-
   val name: String = "low_level_apply_chain"
   val severity: Severity.Level = Severity.Info
 
@@ -269,8 +269,7 @@ object Low_Level_Apply_Chain extends Proper_Commands_Lint
     "drule",
     "subst",
     "rewrite",
-    "unfold"
-  )
+    "unfold")
 
   private def is_low_level_method(method: Method): Boolean = method match {
     case Simple_Method(name, _, _) =>
@@ -290,26 +289,23 @@ object Low_Level_Apply_Chain extends Proper_Commands_Lint
       commands.dropWhile(!is_low_level_apply(_)).span(is_low_level_apply)
 
     val new_report =
-      if (low_level_commands.length >= 5)
+      if (low_level_commands.length >= 5) {
         add_result(
           "Compress low-level proof methods into automated search.",
           list_range(low_level_commands.map(_.range)),
           None,
           low_level_commands,
-          report
-        )
-      else
-        report
+          report)
+      }
+      else report
 
-    if (rest.isEmpty)
-      new_report
+    if (rest.isEmpty) new_report
     else lint_proper(rest, new_report)
   }
 }
 
-object Global_Attribute_Changes extends Proper_Commands_Lint with TokenParsers
+object Global_Attribute_Changes extends Proper_Commands_Lint with Token_Parsers
 {
-
   val name: String = "global_attribute_changes"
   val severity: Severity.Level = Severity.Info
 
@@ -331,24 +327,23 @@ object Global_Attribute_Changes extends Proper_Commands_Lint with TokenParsers
         "  lemma …",
         "",
         "",
-        "declare word_neq_0_conv [simp del]"
-      )
+        "declare word_neq_0_conv [simp del]")
       .add("Instead, users should use the context, notes or bundle commands.")
       .references("http://proofcraft.org/blog/isabelle-style-part2.html")
 
 
   type Declaration = (String, List[String]) // Identifier, attribute list without whitespaces
 
-  private def declaration: Parser[Declaration] = pIdent ~ pSqBracketed(pAttributes) ^^ {
-    case identifier ~ attributes => (identifier.info.content, attributes map mkString)
+  private def declaration: Parser[Declaration] = p_ident ~ p_sq_bracketed(p_attributes) ^^ {
+    case identifier ~ attributes => (identifier.info.content, attributes map mk_string)
   }
 
   private def declare_command: Parser[List[Declaration]] =
-    pCommand("declare") ~> chainl1[List[Declaration]](
+    p_command("declare") ~> chainl1[List[Declaration]](
       declaration ^^ {
         List(_)
       },
-      pKeyword("and") ^^^ {
+      p_keyword("and") ^^^ {
         _ ::: _
       }
     )
@@ -361,20 +356,19 @@ object Global_Attribute_Changes extends Proper_Commands_Lint with TokenParsers
 
   private def proces_declaration(command: Parsed_Command)(
     report_simpset: (Lint_Report, Set[String]),
-    declaration: Declaration
-  ): (Lint_Report, Set[String]) =
+    declaration: Declaration): (Lint_Report, Set[String]) =
   {
     val (ident, attrs) = declaration
     val (report, simpset) = report_simpset
     val new_report =
-      if (simpset.contains(ident) && has_simp_del(attrs))
+      if (simpset.contains(ident) && has_simp_del(attrs)) {
         add_result(
           "Use context or bundles instead of global simp attribute changes.",
           command.range,
           None,
           command,
-          report
-        )
+          report)
+      }
       else report
     val new_simpset =
       if (has_simp(attrs)) simpset + ident
@@ -387,19 +381,20 @@ object Global_Attribute_Changes extends Proper_Commands_Lint with TokenParsers
   private def go(
     commands: List[Parsed_Command],
     report: Lint_Report,
-    simpset: Set[String]
-  ): Lint_Report = commands match {
-    case (head@Parsed_Command("declare")) :: next =>
-      tryTransform(declare_command, head) match {
-        case Some(decls) =>
-          val (new_report, new_simpset) =
-            decls.foldLeft((report, simpset))(proces_declaration(head))
-          go(next, new_report, new_simpset)
-        case None => go(next, report, simpset)
-      }
-
-    case _ :: next => go(next, report, simpset)
-    case Nil => report
+    simpset: Set[String]): Lint_Report =
+  {
+    commands match {
+      case (head@Parsed_Command("declare")) :: next =>
+        try_transform(declare_command, head) match {
+          case Some(decls) =>
+            val (new_report, new_simpset) =
+              decls.foldLeft((report, simpset))(proces_declaration(head))
+            go(next, new_report, new_simpset)
+          case None => go(next, report, simpset)
+        }
+      case _ :: next => go(next, report, simpset)
+      case Nil => report
+    }
   }
 
   def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
@@ -452,8 +447,7 @@ object Axiomatization_With_Where extends Single_Command_Lint
         """  P :: "'a ⇒ bool"""",
         "where",
         """  all_true: "∀x. P x" and """,
-        """all_false: "∀x. ¬P x""""
-      )
+        """all_false: "∀x. ¬P x"""")
       .references("http://proofcraft.org/blog/isabelle-style.html")
 
 
@@ -465,8 +459,7 @@ object Axiomatization_With_Where extends Single_Command_Lint
           report(
             """Do not use axiomatization with a where clause.""",
             Text.Range(xs.head.range.start, xs.last.range.stop),
-            Some(Edit(list_range(xs.map(_.range)), "", Some("Remove where")))
-          )
+            Some(Edit(list_range(xs.map(_.range)), "", Some("Remove where"))))
         case Nil => None
       }
     case _ => None
@@ -478,25 +471,22 @@ abstract class Illegal_Command_Lint(
   lint_name: String,
   illegal_commands: List[String],
   lint_severity: Severity.Level,
-  lint_description: String,
-) extends Single_Command_Lint
+  lint_description: String)
+  extends Single_Command_Lint
 {
-
   val name: String = lint_name
   val severity: Severity.Level = lint_severity
 
   val short_description: Lint_Description =
     Lint_Description.empty.add(lint_description)
 
-  val long_description: Lint_Description = {
-    illegal_commands.tail
-      .foldLeft(
-        Lint_Description.empty
-          .addln(lint_description + ": ").inline_code(illegal_commands.head)
-      )(
-        (descr, command) => descr.add(", ").inline_code(command)
-      )
-
+  val long_description: Lint_Description =
+  {
+    val desc = Lint_Description.empty.addln(lint_description + ": ").inline_code(
+      illegal_commands.head)
+    illegal_commands.tail.foldLeft(desc) {
+      case (descr, command) => descr.add(", ").inline_code(command)
+    }
   }
 
   def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] =
@@ -505,40 +495,32 @@ abstract class Illegal_Command_Lint(
     else None
 }
 
-object Unfinished_Proof
-  extends Illegal_Command_Lint(
+object Unfinished_Proof extends Illegal_Command_Lint(
     "Consider finishing the proof.",
     "unfinished_proof",
     List("sorry", "\\<proof>"),
     Severity.Error,
-    "This lint detects unfinished proofs, characterized by the following commands"
-  )
+    "This lint detects unfinished proofs, characterized by the following commands")
 
-object Proof_Finder
-  extends Illegal_Command_Lint(
+object Proof_Finder extends Illegal_Command_Lint(
     "Remove proof finder command.",
     "proof_finder",
     List(
       "sledgehammer",
       "solve_direct",
       "try",
-      "try0"
-    ),
+      "try0"),
     Severity.Error,
-    "This lint detects proof-finder commands"
-  )
+    "This lint detects proof-finder commands")
 
-object Bad_Style_Command
-  extends Illegal_Command_Lint(
+object Bad_Style_Command extends Illegal_Command_Lint(
     "Bad style command.",
     "bad_style_command",
     List("back", "apply_end"),
     Severity.Error,
-    "This lint detects bad-style commands"
-  )
+    "This lint detects bad-style commands")
 
-object Diagnostic_Command
-  extends Illegal_Command_Lint(
+object Diagnostic_Command extends Illegal_Command_Lint(
     "Remove interactive diagnostic command",
     "diagnostic_command",
     List(
@@ -605,11 +587,9 @@ object Diagnostic_Command
       "term",
       "prop",
       "thm",
-      "typ"
-    ),
+      "typ"),
     Severity.Info,
-    "This lint finds diagnostic commands"
-  )
+    "This lint finds diagnostic commands")
 
 object Counter_Example_Finder_Lint extends AST_Lint
 {
@@ -631,32 +611,29 @@ object Counter_Example_Finder_Lint extends AST_Lint
   def no_expect(attributes: List[List[Text.Info[Token]]]): Boolean =
     !attributes.exists(_.headOption.exists(_.info.content == "expect"))
 
-  override def lint_ast_node(elem: Text.Info[ASTNode], report: Reporter): Option[Lint_Result] =
+  override def lint_ast_node(elem: Text.Info[AST_Node], report: Reporter): Option[Lint_Result] =
     elem.info match {
       case Counter_Example_Finder(_, attributes) if attributes.isEmpty || no_expect(attributes)
       => report(
         "Remove counter-example finder command.",
         elem.range,
-        Some(Edit(elem.range, "", Some("Remove invocation")))
-      )
+        Some(Edit(elem.range, "", Some("Remove invocation"))))
       case _ => None
     }
 }
 
 object Short_Name extends Parser_Lint
 {
-
   val name: String = "short_name"
   val severity: Severity.Level = Severity.Info
 
   val short_description: Lint_Description =
-    Lint_Description.empty
-      .add("Finds functions or definitions with short names (one character).")
+    Lint_Description.empty.add("Finds functions or definitions with short names (one character).")
 
   val long_description: Lint_Description = short_description
 
   override def parser(report: Reporter): Parser[Some[Lint_Result]] =
-    pCommand("fun", "definition") ~> elem("ident", _.info.content.length < 2) ^^ {
+    p_command("fun", "definition") ~> elem("ident", _.info.content.length < 2) ^^ {
       case Text.Info(range, token) =>
         report(s"""Name "${token.content}" is too short.""", range, None)
     }
@@ -664,14 +641,12 @@ object Short_Name extends Parser_Lint
 
 object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint
 {
-
   val name: String = "global_attribute_on_unnamed_lemma"
   val severity: Severity.Level = Severity.Error
   val GLOBAL_ATTRIBUTES = List("simp", "cong", "intro", "elim", "dest")
 
   val short_description: Lint_Description =
-    Lint_Description.empty
-      .add("Setting global attributes on unnamed lemmas should be avoided.")
+    Lint_Description.empty.add("Setting global attributes on unnamed lemmas should be avoided.")
 
   val long_description: Lint_Description =
     Lint_Description.empty
@@ -686,13 +661,12 @@ object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint
   }
 
   override def parser(report: Reporter): Parser[Some[Lint_Result]] =
-    pCommand("lemma") ~> pSqBracketed(pAttributes) >> {
+    p_command("lemma") ~> p_sq_bracketed(p_attributes) >> {
       _.find(simp_or_cong) match {
         case None => failure("no match")
         case Some(tokens) =>
-          success(
-            report("Do not use global attributes on unnamed lemmas.", tokens.head.range, None)
-          )
+          success(report("Do not use global attributes on unnamed lemmas.",
+            tokens.head.range, None))
       }
     }
 }
@@ -705,8 +679,7 @@ object Tactic_Proofs extends AST_Lint
   private val TACTICS = List("insert", "subgoal_tac", "induct_tac", "rule_tac", "case_tac")
 
   val short_description: Lint_Description =
-    Lint_Description.empty
-      .add("Using tactics is considered harmful and should be avoided.")
+    Lint_Description.empty.add("Using tactics is considered harmful and should be avoided.")
 
   val long_description: Lint_Description =
     short_description
@@ -725,7 +698,6 @@ object Tactic_Proofs extends AST_Lint
 
 object Lemma_Transforming_Attribute extends Parser_Lint
 {
-
   val name: String = "lemma_transforming_attribute"
   val severity: Severity.Level = Severity.Warn
 
@@ -747,7 +719,7 @@ object Lemma_Transforming_Attribute extends Parser_Lint
   }
 
   override def parser(report: Reporter): Parser[Some[Lint_Result]] =
-    (pCommand("lemma") ~ pIdent.?) ~> pSqBracketed(pAttributes) >> {
+    (p_command("lemma") ~ p_ident.?) ~> p_sq_bracketed(p_attributes) >> {
       _.find(simp_or_cong) match {
         case None => failure("no match")
         case Some(tokens) =>
@@ -787,7 +759,6 @@ object Implicit_Rule extends AST_Lint
 
 object Complex_Isar_Initial_Method extends AST_Lint
 {
-
   val name: String = "complex_isar_initial_method"
   val severity: Severity.Level = Severity.Warn
 
@@ -818,10 +789,8 @@ object Complex_Isar_Initial_Method extends AST_Lint
   ): Option[Lint_Result] =
     for {
       Text.Info(range, s_method) <- method
-      if calls_simplifier(s_method) || Complex_Method.is_complex_method(
-        s_method,
-        allow_modifiers = false
-      )
+      if calls_simplifier(s_method) || Complex_Method.is_complex_method(s_method,
+        allow_modifiers = false)
     } yield report("Keep initial proof methods simple.", range, None).get
 }
 
@@ -870,7 +839,6 @@ object Auto_Structural_Composition extends AST_Lint
     case Simple_Method(name, _, _) => name.info.source == "auto"
     case Combined_Method(left, _, right, _) =>
       has_auto(left.info) || has_auto(right.info)
-
   }
 
   override def lint_method(method: Text.Info[Method], report: Reporter): Option[Lint_Result] =
@@ -885,13 +853,11 @@ object Auto_Structural_Composition extends AST_Lint
 
 object Complex_Method extends AST_Lint
 {
-
   val name: String = "complex_method"
   val severity: Severity.Level = Severity.Warn
 
   val short_description: Lint_Description =
-    Lint_Description.empty
-      .add("Using complex methods (e.g. too much nesting) should be avoided.")
+    Lint_Description.empty.add("Using complex methods (e.g. too much nesting) should be avoided.")
 
   val long_description: Lint_Description =
     Lint_Description.empty
@@ -933,7 +899,7 @@ object Complex_Method extends AST_Lint
     (if (allow_modifiers) has_complex_modifiers(method) else has_modifiers(method)) ||
       has_many_combinators(method)
 
-  def is_complex(element: ASTNode): Boolean = element match {
+  def is_complex(element: AST_Node): Boolean = element match {
     case Apply(method) => is_complex_method(method.info)
     case Isar_Proof(Some(method)) => is_complex_method(method.info)
     case _ => false
@@ -943,12 +909,10 @@ object Complex_Method extends AST_Lint
 
   override def lint_method(method: Text.Info[Method], report: Reporter): Option[Lint_Result] =
     if (is_complex_method(method.info)) report(message, method.range, None) else None
-
 }
 
 object Print_AST extends AST_Lint
 {
-
   val name: String = "print_structure"
   val severity: Severity.Level = Severity.Info
 
@@ -957,9 +921,6 @@ object Print_AST extends AST_Lint
 
   val long_description: Lint_Description = short_description
 
-  override def lint_ast_node(
-    elem: Text.Info[ASTNode],
-    report: Reporter
-  ): Option[Lint_Result] =
+  override def lint_ast_node(elem: Text.Info[AST_Node], report: Reporter): Option[Lint_Result] =
     report(s"Parsed: ${elem.info}", elem.range, None)
 }

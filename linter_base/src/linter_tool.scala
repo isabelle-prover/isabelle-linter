@@ -1,3 +1,7 @@
+/* Author: Yecine Megdiche and Fabian Huch, TU Muenchen
+
+Linter command-line tool.
+ */
 package isabelle.linter
 
 
@@ -68,12 +72,9 @@ object Linter_Tool
     def process_snapshot(
       linter: Linter_Interface,
       snapshot: Snapshot,
-      progress: Progress
-    ): Unit = ()
+      progress: Progress): Unit
 
-    def process_end(
-      progress: Progress
-    ): Unit = ()
+    def process_end(progress: Progress): Unit
 
     def apply(
       options: Options,
@@ -161,8 +162,7 @@ object Linter_Tool
     override def process_snapshot(
       linter: Linter_Interface,
       snapshot: Snapshot,
-      progress: Progress
-    ): Unit =
+      progress: Progress): Unit =
     {
       val start_date = Date.now()
       val result = linter.lint_report(snapshot)
@@ -172,27 +172,18 @@ object Linter_Tool
       reports += JSON.Object(
         "theory" -> snapshot.node_name.toString,
         "report" -> report,
-        "timing" -> timing.ms
-      )
+        "timing" -> timing.ms)
     }
 
-    override def process_end(
-      progress: Progress
-    ): Unit =
-    {
-      progress.echo(
-        JSON.Format(
-          JSON.Object(
-            "reports" -> reports.toList
-          )
-        )
-      )
-    }
+    override def process_end(progress: Progress): Unit =
+      progress.echo(JSON.Format(JSON.Object("reports" -> reports.toList)))
   }
 
   object Lint_Text extends Lint_CLI
   {
     override protected type A = String
+
+    override def process_end(progress: Progress): Unit = ()
 
     override val reporter: Reporter[String] = Text_Reporter
 
@@ -202,23 +193,19 @@ object Linter_Tool
     override def process_snapshot(
       linter: Linter_Interface,
       snapshot: Snapshot,
-      progress: Progress
-    ): Unit =
+      progress: Progress): Unit =
     {
       progress.echo(snapshot.node_name.toString + ":")
       val result = linter.lint_report(snapshot)
       val report = reporter.report_for_snapshot(result)
-      if (report.isEmpty)
-        progress.echo("No lints found.")
-      else
-        progress.echo(report)
+      if (report.isEmpty) progress.echo("No lints found.")
+      else progress.echo(report)
     }
 
   }
 
   class Lint_XML extends Lint_CLI
   {
-
     override protected type A = XML.Body
 
     override val reporter: Reporter[XML.Body] = XML_Reporter
@@ -231,23 +218,19 @@ object Linter_Tool
     override def process_snapshot(
       linter: Linter_Interface,
       snapshot: Snapshot,
-      progress: Progress
-    ): Unit =
+      progress: Progress): Unit =
     {
       val start_date = Date.now()
       val result = linter.lint_report(snapshot)
       val report = reporter.report_for_snapshot(result)
       val end_date = Date.now()
       val timing = end_date.time - start_date.time
-      reports += XML.Elem(
-        Markup("report", Linter_Markup.Theory(snapshot.node_name.toString) ::: Linter_Markup.Timing(timing.ms)),
-        report
-      )
+      reports += XML.Elem(Markup("report",
+        Linter_Markup.Theory(snapshot.node_name.toString) ::: Linter_Markup.Timing(timing.ms)),
+        report)
     }
 
-    override def process_end(
-      progress: Progress
-    ): Unit =
+    override def process_end(progress: Progress): Unit =
     {
       val xml_reports = XML.Elem(Markup("reports", Nil), reports.toList)
       progress.echo(XML.string_of_tree(xml_reports))
@@ -288,8 +271,7 @@ object Linter_Tool
     var verbose = false
     var exclude_sessions: List[String] = Nil
 
-    val getopts = Getopts(
-      """
+    val getopts = Getopts("""
 Usage: isabelle lint [OPTIONS] [SESSIONS ...]
 
   Options are:

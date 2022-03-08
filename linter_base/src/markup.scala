@@ -1,10 +1,16 @@
+/* Author: Yecine Megdiche, TU Muenchen
+
+Custom linter markup.
+ */
+
 package isabelle.linter
+
 
 import isabelle._
 
+
 object Linter_Markup
 {
-
   val LINTER_SENDBACK = "linter_sendback"
   val GOTO_POSITION = "goto_position"
 
@@ -41,7 +47,6 @@ object Linter_Markup
 
   object Lint_Commands
   {
-
     def apply(commands: List[Document_ID.Command]): Properties.T =
       List((LINT_COMMANDS, commands.mkString(",")))
 
@@ -57,5 +62,4 @@ object Linter_Markup
         case _ => None
       }
   }
-
 }

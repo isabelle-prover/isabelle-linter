@@ -1,3 +1,8 @@
+/* Author: Yecine Megdiche, TU Munich
+
+Auxiliary tool to print lint bundles.
+ */
+
 package isabelle.linter
 
 
@@ -5,17 +10,13 @@ import isabelle._
 
 object Lint_Bundles
 {
-
   def print_bundle_line(bundle: Lint_Store.Bundle): String =
     Lint_Descriptions.row(
       "td",
       bundle.name,
-      Library.commas(bundle.lint_names.toList.sorted)
-    )
+      Library.commas(bundle.lint_names.toList.sorted))
 
-  def print_bundles(
-    progress: Progress = new Progress,
-  ): Unit =
+  def print_bundles(progress: Progress = new Progress): Unit =
   {
     progress.echo("<table>")
     progress.echo(Lint_Descriptions.row("th", "Bundle Name", "Lints"))
@@ -25,31 +26,23 @@ object Lint_Bundles
 
   /* Isabelle tool wrapper */
 
-  val isabelle_tool =
-    Isabelle_Tool(
-      "lint_bundles",
-      "print the lints belonging to each bundle.",
-      Scala_Project.here,
-      args => {
-        val getopts = Getopts(
-          """
+  val isabelle_tool = Isabelle_Tool("lint_bundles", "print the lints belonging to each bundle.",
+      Scala_Project.here, args =>
+  {
+      val getopts = Getopts("""
 Usage: isabelle lint_bundles
 
-  print the lints belonging to each bundle.
-""",
-        )
+print the lints belonging to each bundle.
+""")
 
-        getopts(args)
+    getopts(args)
 
-        val progress = new Console_Progress()
+    val progress = new Console_Progress()
 
-        progress.interrupt_handler {
-          print_bundles(
-            progress = progress,
-          )
-        }
-      }
-    )
+    progress.interrupt_handler {
+      print_bundles(progress = progress)
+    }
+  })
 }
 
 class Lint_Bundles extends Isabelle_Scala_Tools(Lint_Bundles.isabelle_tool)
