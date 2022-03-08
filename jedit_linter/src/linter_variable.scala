@@ -52,7 +52,7 @@ class Linter_Variable
     } {
       do_lint(snapshot)
       val report = lint_report(snapshot)
-      val overlays = Overlay_Presenter.present_for_snapshot(report)
+      val overlays = Linter_Overlay.Presenter.present_for_snapshot(report)
       Linter_Plugin.instance.foreach(_.overlays.update(overlays))
     }
   }

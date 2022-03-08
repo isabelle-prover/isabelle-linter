@@ -10,7 +10,6 @@ sources = \
   src/linter_dockable.scala \
   src/linter_overlay.scala \
   src/linter_plugin.scala \
-  src/linter_variable.scala \
-  src/overlay_presenter.scala
+  src/linter_variable.scala
 services = \
   isabelle.jedit_linter.JEdit_Linter_Plugin
