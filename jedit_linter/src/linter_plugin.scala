@@ -11,7 +11,7 @@ class Linter_Plugin extends EBPlugin
 {
   JEdit_Extension.init
 
-  val linter = new PIDE_Linter_Variable()
+  val linter = new Linter_Variable()
   val overlays = new Linter_Overlay.Variable
   private var shutdown = false
   private var started = false

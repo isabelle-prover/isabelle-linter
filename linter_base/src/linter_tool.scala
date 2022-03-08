@@ -2,6 +2,7 @@
 
 Linter command-line tool.
  */
+
 package isabelle.linter
 
 
@@ -61,191 +62,79 @@ object Linter_Tool
     }
   }
 
-
-  abstract class Lint_CLI
+  def lint[A](
+    configuration: Linter_Configuration,
+    presenter: Presenter[A],
+    out_file: Option[Path],
+    options: Options,
+    selection: Sessions.Selection = Sessions.Selection.empty,
+    progress: Progress = new Progress,
+    clean_build: Boolean = false,
+    dirs: List[Path] = Nil,
+    select_dirs: List[Path] = Nil,
+    numa_shuffling: Boolean = false,
+    max_jobs: Int = 1,
+    verbose_build: Boolean = false,
+    verbose: Boolean = false): Unit =
   {
-    protected type A
-    val reporter: Reporter[A]
+    val res =
+      Build.build(options,
+        selection,
+        progress = progress,
+        check_unknown_files = Mercurial.is_repository(Path.ISABELLE_HOME),
+        clean_build = clean_build,
+        dirs = dirs,
+        select_dirs = select_dirs,
+        numa_shuffling = NUMA.enabled_warning(progress, numa_shuffling),
+        max_jobs = max_jobs,
+        verbose = verbose_build)
+    if (!res.ok) System.exit(res.rc)
 
-    def get_linter_variable: Linter_Variable
+    val full_sessions =
+      Sessions.load_structure(options = options, dirs = dirs, select_dirs = select_dirs)
 
-    def process_snapshot(
-      linter: Linter_Interface,
-      snapshot: Snapshot,
-      progress: Progress): Unit
+    val deps = Sessions.deps(full_sessions.selection(selection))
 
-    def process_end(progress: Progress): Unit
+    val reports = full_sessions.imports_selection(selection).flatMap { session_name =>
+      progress.echo("Linting " + session_name)
 
-    def apply(
-      options: Options,
-      selection: Sessions.Selection = Sessions.Selection.empty,
-      progress: Progress = new Progress,
-      clean_build: Boolean = false,
-      dirs: List[Path] = Nil,
-      select_dirs: List[Path] = Nil,
-      numa_shuffling: Boolean = false,
-      max_jobs: Int = 1,
-      verbose_build: Boolean = false,
-      verbose: Boolean = false,
-      log: Logger = No_Logger): Unit =
-    {
-      val res =
-        Build.build(options,
-          selection,
-          progress = progress,
-          check_unknown_files = Mercurial.is_repository(Path.ISABELLE_HOME),
-          clean_build = clean_build,
-          dirs = dirs,
-          select_dirs = select_dirs,
-          numa_shuffling = NUMA.enabled_warning(progress, numa_shuffling),
-          max_jobs = max_jobs,
-          verbose = verbose_build)
-      if (!res.ok) System.exit(res.rc)
+      val theories = deps.get(session_name).get.session_theories.map(_.theory)
 
-      val linter_variable = get_linter_variable
-      linter_variable.update(options + "linter=true")
+      val store = Sessions.store(options)
 
-      val linter = linter_variable.get.get
+      using(store.open_database_context())(db_context => {
+        val result =
+          db_context.input_database(session_name)((db, _) => {
+            val errors = store.read_errors(db, session_name)
+            store.read_build(db, session_name).map(info => (theories, errors, info.return_code))
+          })
+        result match {
+          case None => error("Missing build database for session " + quote(session_name))
+          case Some((used_theories, errors, _)) =>
+            if (errors.nonEmpty) error(errors.mkString("\n\n"))
+            used_theories.map { thy =>
+              val thy_heading = "\nTheory " + quote(thy) + ":"
+              read_theory(db_context, List(session_name), thy) match {
+                case None => error(thy_heading + " MISSING")
+                case Some(snapshot) =>
+                  progress.echo_if(verbose, "Processing theory " + snapshot.node_name.toString + " ...")
+                  val start = Date.now()
+                  val report = Linter.lint(snapshot, configuration)
+                  val end = Date.now()
 
-      val full_sessions =
-        Sessions.load_structure(options = options, dirs = dirs, select_dirs = select_dirs)
+                  val output = presenter.present_for_snapshot(report)
+                  progress.echo_if(verbose, presenter.to_string(output))
 
-      val deps = Sessions.deps(full_sessions.selection(selection))
-
-      full_sessions.imports_selection(selection).foreach { session_name =>
-        progress.echo("Linting " + session_name)
-
-        val theories = deps.get(session_name).get.session_theories.map(_.theory)
-
-        val store = Sessions.store(options)
-
-        using(store.open_database_context())(db_context => {
-          val result =
-            db_context.input_database(session_name)((db, _) => {
-              val errors = store.read_errors(db, session_name)
-              store.read_build(db, session_name).map(info => (theories, errors, info.return_code))
-            })
-          result match {
-            case None => error("Missing build database for session " + quote(session_name))
-            case Some((used_theories, errors, _)) =>
-              if (errors.nonEmpty) error(errors.mkString("\n\n"))
-              for {
-                thy <- used_theories
-              } {
-                val thy_heading = "\nTheory " + quote(thy) + ":"
-                read_theory(db_context, List(session_name), thy) match {
-                  case None => progress.echo(thy_heading + " MISSING")
-                  case Some(snapshot) =>
-                    progress.echo_if(verbose, "Processing theory " + snapshot.node_name.toString + " ...")
-                    process_snapshot(linter, snapshot, progress)
-                }
+                  presenter.with_info(output, snapshot.node_name, end.time - start.time)
               }
-          }
-        })
-      }
-
-      process_end(progress)
-    }
-  }
-
-  class Lint_JSON extends Lint_CLI
-  {
-    override protected type A = JSON.T
-
-    override val reporter: Reporter[JSON.T] = JSON_Reporter
-
-    val reports = new ListBuffer[JSON.T]()
-
-    def get_linter_variable: Linter_Variable =
-      new Linter_Variable(cache = false)
-
-    override def process_snapshot(
-      linter: Linter_Interface,
-      snapshot: Snapshot,
-      progress: Progress): Unit =
-    {
-      val start_date = Date.now()
-      val result = linter.lint_report(snapshot)
-      val report = reporter.report_for_snapshot(result)
-      val end_date = Date.now()
-      val timing = end_date.time - start_date.time
-      reports += JSON.Object(
-        "theory" -> snapshot.node_name.toString,
-        "report" -> report,
-        "timing" -> timing.ms)
+            }
+        }
+      })
     }
 
-    override def process_end(progress: Progress): Unit =
-      progress.echo(JSON.Format(JSON.Object("reports" -> reports.toList)))
+    out_file.foreach { file => File.write(file, presenter.mk_string(reports))}
   }
 
-  object Lint_Text extends Lint_CLI
-  {
-    override protected type A = String
-
-    override def process_end(progress: Progress): Unit = ()
-
-    override val reporter: Reporter[String] = Text_Reporter
-
-    override def get_linter_variable: Linter_Variable =
-      new Linter_Variable(cache = false)
-
-    override def process_snapshot(
-      linter: Linter_Interface,
-      snapshot: Snapshot,
-      progress: Progress): Unit =
-    {
-      progress.echo(snapshot.node_name.toString + ":")
-      val result = linter.lint_report(snapshot)
-      val report = reporter.report_for_snapshot(result)
-      if (report.isEmpty) progress.echo("No lints found.")
-      else progress.echo(report)
-    }
-
-  }
-
-  class Lint_XML extends Lint_CLI
-  {
-    override protected type A = XML.Body
-
-    override val reporter: Reporter[XML.Body] = XML_Reporter
-
-    val reports = new ListBuffer[XML.Tree]()
-
-    override def get_linter_variable: Linter_Variable =
-      new Linter_Variable(cache = false)
-
-    override def process_snapshot(
-      linter: Linter_Interface,
-      snapshot: Snapshot,
-      progress: Progress): Unit =
-    {
-      val start_date = Date.now()
-      val result = linter.lint_report(snapshot)
-      val report = reporter.report_for_snapshot(result)
-      val end_date = Date.now()
-      val timing = end_date.time - start_date.time
-      reports += XML.Elem(Markup("report",
-        Linter_Markup.Theory(snapshot.node_name.toString) ::: Linter_Markup.Timing(timing.ms)),
-        report)
-    }
-
-    override def process_end(progress: Progress): Unit =
-    {
-      val xml_reports = XML.Elem(Markup("reports", Nil), reports.toList)
-      progress.echo(XML.string_of_tree(xml_reports))
-    }
-  }
-
-  def list_lints(options: Options, progress: Progress): Unit =
-  {
-    val linter_variable = new Linter_Variable()
-    linter_variable.update(options + "linter=true")
-
-    val configuration = linter_variable.get.get.configuration
-
-    progress.echo(commas(configuration.get_lints.map(_.name).sorted))
-  }
 
   /* Isabelle tool wrapper */
 
@@ -257,6 +146,7 @@ object Linter_Tool
     var base_sessions: List[String] = Nil
     var select_dirs: List[Path] = Nil
     var numa_shuffling = false
+    var output_file: Option[Path] = None
     var requirements = false
     var verbose_build = false
     var exclude_session_groups: List[String] = Nil
@@ -278,6 +168,7 @@ Usage: isabelle lint [OPTIONS] [SESSIONS ...]
   -B NAME      include session NAME and all descendants
   -D DIR       include session directory and select its sessions
   -N           cyclic shuffling of NUMA CPU nodes (performance tuning)
+  -O FILE      output file
   -R           refer to requirements of selected sessions
   -V           verbose build
   -X NAME      exclude sessions from group NAME and all descendants
@@ -297,6 +188,7 @@ Lint isabelle theories.
       "B:" -> (arg => base_sessions = base_sessions ::: List(arg)),
       "D:" -> (arg => select_dirs = select_dirs ::: List(Path.explode(arg))),
       "N" -> (_ => numa_shuffling = true),
+      "O:" -> (arg => output_file = Some(Path.explode(arg))),
       "R" -> (_ => requirements = true),
       "V" -> (_ => verbose_build = true),
       "X:" -> (arg => exclude_session_groups = exclude_session_groups ::: List(arg)),
@@ -315,18 +207,22 @@ Lint isabelle theories.
 
     val progress = new Console_Progress(verbose = verbose_build)
 
-    if (list) list_lints(options, progress)
-    else {
+    val configuration = Linter_Configuration(options)
 
-      val lint = mode match {
-        case "text" => Lint_Text
-        case "json" => new Lint_JSON()
-        case "xml" => new Lint_XML()
+    if (list) progress.echo(commas(configuration.get_lints.map(_.name).sorted))
+    else {
+      val presenter = mode match {
+        case "text" => Text_Presenter
+        case "json" => JSON_Presenter
+        case "xml" => XML_Presenter
         case _ => error(s"Unrecognized reporting mode $mode")
       }
 
       progress.interrupt_handler {
         lint(
+          configuration,
+          presenter,
+          output_file,
           options,
           selection = Sessions.Selection(
             requirements = requirements,

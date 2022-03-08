@@ -6,16 +6,34 @@ Configuration of enabled lints.
 package isabelle.linter
 
 
+import isabelle._
+
+
 object Linter_Configuration
 {
+  val ENABLED_BUNDLES_OPTION = "enabled_bundles"
+  val ENABLED_LINTS_OPTION = "enabled_lints"
+  val DISABLED_LINTS_OPTION = "disabled_lints"
+
+  def apply(options: Options): Linter_Configuration =
+  {
+    val bundles = space_explode(',', options.string(ENABLED_BUNDLES_OPTION))
+    val enabled_lints = space_explode(',', options.string(ENABLED_LINTS_OPTION))
+    val disabled_lints = space_explode(',', options.string(DISABLED_LINTS_OPTION))
+
+    Linter_Configuration.empty
+      .add_bundles(bundles)
+      .enable_lints(enabled_lints)
+      .disable_lints(disabled_lints)
+  }
+
   def apply(lints: Set[String]): Linter_Configuration = new Linter_Configuration(lints)
 
-  def empty: Linter_Configuration = Linter_Configuration(Set.empty)
+  def empty: Linter_Configuration = new Linter_Configuration(Set.empty)
 }
 
 class Linter_Configuration(private val lints: Set[String])
 {
-
   def enable_lint(lint_name: String): Linter_Configuration =
     Linter_Configuration(lints + lint_name)
 
