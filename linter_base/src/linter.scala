@@ -107,7 +107,6 @@ object Linter
 
   object Lint_Result
   {
-
     def apply(
       lint_name: String,
       message: String,
@@ -121,13 +120,12 @@ object Linter
 
   object Lint_Report
   {
-    val empty: Lint_Report = Lint_Report(Nil)
+    val empty: Lint_Report = new Lint_Report(Nil)
   }
 
-  case class Lint_Report(_results: List[Lint_Result])
+  class Lint_Report(_results: List[Lint_Result])
   {
-
-    def add_result(result: Lint_Result): Lint_Report = Lint_Report(result :: _results)
+    def add_result(result: Lint_Result): Lint_Report = new Lint_Report(result :: _results)
 
     def results: List[Lint_Result] =
       _results.sortWith((r1, r2) => Text.Range.Ordering.compare(r1.range, r2.range) < 0)
@@ -196,8 +194,7 @@ object Linter
       range: Text.Range,
       edit: Option[Edit],
       command: Parsed_Command,
-      report: Lint_Report
-    ): Lint_Report =
+      report: Lint_Report): Lint_Report =
       report.add_result(
         Lint_Result(
           name,
@@ -206,17 +203,14 @@ object Linter
           edit,
           severity,
           command,
-          short_description
-        )
-      )
+          short_description))
 
     def add_result(
       message: String,
       range: Text.Range,
       edit: Option[Edit],
       commands: List[Parsed_Command],
-      report: Lint_Report
-    ): Lint_Report =
+      report: Lint_Report): Lint_Report =
       report.add_result(
         Lint_Result(
           name,
@@ -225,9 +219,7 @@ object Linter
           edit,
           severity,
           commands,
-          short_description
-        )
-      )
+          short_description))
   }
 
   abstract class Single_Command_Lint extends Lint
@@ -235,12 +227,7 @@ object Linter
 
     def lint(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
       commands
-        .flatMap(command =>
-          lint(
-            command,
-            Reporter(command, name, severity, short_description)
-          )
-        )
+        .flatMap(command => lint(command, Reporter(command, name, severity, short_description)))
         .foldLeft(report)((report, result) => report.add_result(result))
 
     def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result]

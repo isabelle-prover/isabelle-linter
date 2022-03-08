@@ -13,43 +13,6 @@ import java.awt.BorderLayout
 import org.gjt.sp.jedit.View
 
 
-class PIDE_Linter_Variable extends Linter_Variable(true)
-{
-  private def refresh_lint(): Unit = synchronized {
-    for {
-      snapshot <- PIDE.maybe_snapshot()
-      linter <- get
-      if !snapshot.is_outdated
-    } {
-      linter.do_lint(snapshot)
-      val report = linter.lint_report(snapshot)
-      val overlays = Overlay_Reporter.report_for_snapshot(report)
-      Linter_Plugin.instance.foreach(_.overlays.update(overlays))
-    }
-  }
-
-  private val main =
-    Session.Consumer[Any](getClass.getName) { _ =>
-      GUI_Thread.later {
-        refresh_lint()
-        // FIXME maybe a separate event for the linter?
-        PIDE.session.caret_focus.post(Session.Caret_Focus)
-      }
-    }
-
-  def install_handlers(): Unit =
-  {
-    PIDE.session.global_options += main
-    PIDE.session.commands_changed += main
-  }
-
-  def uninstall_handlers(): Unit =
-  {
-    PIDE.session.global_options -= main
-    PIDE.session.commands_changed -= main
-  }
-}
-
 class Linter_Dockable(view: View, position: String) extends Dockable(view, position)
 {
   /* text area */
@@ -74,9 +37,9 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
 
   /* update */
 
-  val separator = XML_Reporter.text("----------------")
-  val disabled = XML_Reporter.text("The linter plugin is disabled.")
-  val empty = XML_Reporter.text("No lints found.")
+  val separator = XML_Presenter.text("----------------")
+  val disabled = XML_Presenter.text("The linter plugin is disabled.")
+  val empty = XML_Presenter.text("No lints found.")
 
   def handle_lint(): Unit =
   {
@@ -86,15 +49,14 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
       snapshot <- PIDE.maybe_snapshot(view)
       if !snapshot.is_outdated
     } {
-      val new_output = Linter_Plugin.instance.flatMap(_.linter.get) match {
-        case None => disabled
-        case Some(linter) =>
+      val new_output = Linter_Plugin.instance.map(_.linter) match {
+        case Some(linter) if linter.enabled =>
           val current_command =
             PIDE.editor.current_command(view, snapshot).getOrElse(Command.empty)
 
           val report = linter.lint_report(snapshot)
-          val snapshot_lints = XML_Reporter.report_for_snapshot(report, show_descriptions)
-          val command_lints = XML_Reporter.report_for_command(report, current_command.id)
+          val snapshot_lints = XML_Presenter.present_for_snapshot(report, show_descriptions)
+          val command_lints = XML_Presenter.present_for_command(report, current_command.id)
 
           val all_lints =
             if (lint_all && snapshot_lints.nonEmpty) separator ::: snapshot_lints
@@ -102,6 +64,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
 
           val res = command_lints ::: all_lints
           if (res.nonEmpty) res else empty
+        case _ => disabled
       }
 
       if (current_output != new_output) {

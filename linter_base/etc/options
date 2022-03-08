@@ -1,8 +1,5 @@
 section "Linter"
 
-public option linter : bool = true
-  -- "enable linter"
-
 public option enabled_bundles : string = "default"
   -- "enabled lint bundles"
 

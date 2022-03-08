@@ -7,7 +7,6 @@ sources = \
   src/lint_store.scala \
   src/linter.scala \
   src/linter_configuration.scala \
-  src/linter_interface.scala \
   src/linter_tool.scala \
   src/lints.scala \
   src/print_lints.scala \
@@ -15,7 +14,7 @@ sources = \
   src/lint_description.scala \
   src/markup.scala \
   src/parsers.scala \
-  src/reporter.scala \
+  src/presenter.scala \
   src/token_markup.scala \
   src/utils.scala
 services = \

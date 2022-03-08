@@ -1,28 +1,30 @@
 /* Author: Yecine Megdiche, TU Muenchen
 
-Lint reporting in different formats.
+Lint report presentation in different formats.
  */
+
 package isabelle.linter
 
 
+import isabelle.Document.Node
+import isabelle.JSON.T
+import isabelle.XML.Body
 import isabelle._
 
 
-trait Reporter[A]
+trait Presenter[A]
 {
-  def report_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): A
+  def to_string(report: A): String
+  def mk_string(reports: List[A]): String
 
-  def report_for_snapshot(lint_report: Linter.Lint_Report, show_descriptions: Boolean = false): A
+  def present_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): A
+  def present_for_snapshot(lint_report: Linter.Lint_Report, show_descriptions: Boolean = false): A
+
+  def with_info(report: A, node: Document.Node.Name, elapsed: Time): A
 }
 
-object JSON_Reporter extends Reporter[JSON.T]
+object JSON_Presenter extends Presenter[JSON.T]
 {
-  def report_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): JSON.T =
-    JSON.Object("results" -> lint_report.command_lints(id))
-
-  def report_for_snapshot(lint_report: Linter.Lint_Report, show_descriptions: Boolean = false): JSON.T =
-    JSON.Object("results" -> lint_report.results.map(report_result))
-
   private def report_result(lint_result: Linter.Lint_Result): JSON.T = JSON.Object(
     "name" -> lint_result.lint_name,
     "severity" -> lint_result.severity.toString,
@@ -38,18 +40,30 @@ object JSON_Reporter extends Reporter[JSON.T]
           "stopOffset" -> edit.range.stop,
           "replacement" -> edit.replacement,
           "msg" -> edit.msg.orNull)
-      }).orNull
-  )
+      }).orNull)
+
+  override def to_string(report: JSON.T): String =
+    JSON.Format.apply(report)
+
+  override def mk_string(reports: List[T]): String =
+    JSON.Format.apply(JSON.Object("reports" -> reports))
+
+  override def present_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): JSON.T =
+    JSON.Object("results" -> lint_report.command_lints(id))
+
+  override def present_for_snapshot(lint_report: Linter.Lint_Report,
+    show_descriptions: Boolean = false): JSON.T =
+    JSON.Object("results" -> lint_report.results.map(report_result))
+
+  override def with_info(report: T, node: Node.Name, elapsed: Time): T =
+    JSON.Object(
+      "theory" -> node.toString,
+      "report" -> report,
+      "timing" -> elapsed)
 }
 
-object Text_Reporter extends Reporter[String]
+object Text_Presenter extends Presenter[String]
 {
-  def report_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): String =
-    report_results(lint_report.command_lints(id))
-
-  def report_for_snapshot(lint_report: Linter.Lint_Report, show_descriptions: Boolean = false): String =
-    report_results(lint_report.results)
-
   private def report_results(lint_results: List[Linter.Lint_Result]): String =
     lint_results.map(report_result).mkString("\n" + "=" * 30 + "\n")
 
@@ -103,23 +117,26 @@ object Text_Reporter extends Reporter[String]
 
     Utils.map_accum_l(source.split("\n").toList, range, underline).mkString("\n")
   }
+
+  override def to_string(report: String): String =
+    if (report.isEmpty) "No lints found." else report
+
+  override def mk_string(reports: List[String]): String = reports.mkString("\n")
+
+  override def present_for_command(lint_report: Linter.Lint_Report,
+    id: Document_ID.Command): String =
+    report_results(lint_report.command_lints(id))
+
+  override def present_for_snapshot(lint_report: Linter.Lint_Report,
+    show_descriptions: Boolean = false): String =
+    report_results(lint_report.results)
+
+  override def with_info(report: String, node: Node.Name, elapsed: Time): String =
+    "Linted " + node + " in " + elapsed + ":\n" + report
 }
 
-object XML_Reporter extends Reporter[XML.Body]
+object XML_Presenter extends Presenter[XML.Body]
 {
-  def report_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): XML.Body =
-  {
-    val xml = report_lints(lint_report.command_lints(id))
-    if (xml.isEmpty) Nil
-    else XML.elem(Markup.KEYWORD1, text("lints:")) :: xml
-  }
-
-  def report_for_snapshot(lint_report: Linter.Lint_Report, show_descriptions: Boolean = false): XML.Body =
-    report_lints(
-      lint_report.results,
-      compact = false,
-      show_descriptions = show_descriptions)
-
   private def report_lints(
     lint_results: List[Linter.Lint_Result],
     compact: Boolean = true,
@@ -174,7 +191,8 @@ object XML_Reporter extends Reporter[XML.Body]
   def position_markup(lint_result: Linter.Lint_Result): XML.Body =
   {
     val pos = Position.Offset(lint_result.range.start + 1) :::
-      Position.End_Offset(lint_result.range.stop) ::: Position.File(lint_result.commands.head.node_name.node)
+      Position.End_Offset(lint_result.range.stop) :::
+      Position.File(lint_result.commands.head.node_name.node)
     text("At ") ::: XML.Elem(
       Markup(Linter_Markup.GOTO_POSITION, pos),
       text(lint_result.line_range.start.print)) :: text(":\n")
@@ -195,4 +213,28 @@ object XML_Reporter extends Reporter[XML.Body]
 
   def block(inner: XML.Body): XML.Body =
     XML.elem(Markup.Block.name, inner) :: Nil
+
+  override def to_string(report: XML.Body): String = XML.string_of_body(report)
+
+  override def mk_string(reports: List[Body]): String =
+    XML.string_of_tree(XML.Elem(Markup("reports", Nil), reports.flatten))
+
+  override def present_for_command(lint_report: Linter.Lint_Report,
+    id: Document_ID.Command): XML.Body =
+  {
+    val xml = report_lints(lint_report.command_lints(id))
+    if (xml.isEmpty) Nil
+    else XML.elem(Markup.KEYWORD1, text("lints:")) :: xml
+  }
+
+  override def present_for_snapshot(lint_report: Linter.Lint_Report,
+    show_descriptions: Boolean = false): XML.Body =
+    report_lints(
+      lint_report.results,
+      compact = false,
+      show_descriptions = show_descriptions)
+
+  override def with_info(report: Body, node: Node.Name, elapsed: Time): Body =
+    List(XML.Elem(Markup("report",
+      Linter_Markup.Theory(node.toString) ::: Linter_Markup.Timing(elapsed.ms)), report))
 }
