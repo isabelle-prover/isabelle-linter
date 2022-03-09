@@ -16,7 +16,7 @@ class Linter_Variable
   val LINTER_ENABLED_OPTION = "linter"
 
   private var lint_cache: Map[Document.Node.Name, (Document.Version, Linter.Lint_Report)] = Map.empty
-  private var configuration: Linter_Configuration = Linter_Configuration.empty
+  private var configuration: Lint_Store.Configuration = Lint_Store.Configuration.empty
   private var _enabled: Boolean = false
 
   private def update_cache(snapshot: Document.Snapshot): Unit =
@@ -33,7 +33,7 @@ class Linter_Variable
 
   def update(options: Options): Unit = synchronized {
     this._enabled = options.bool(LINTER_ENABLED_OPTION)
-    if (_enabled) this.configuration = Linter_Configuration(options)
+    if (_enabled) this.configuration = Lint_Store.Configuration(options)
   }
 
   def do_lint(snapshot: Document.Snapshot): Unit =
