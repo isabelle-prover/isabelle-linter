@@ -24,7 +24,6 @@ object Token_Parsers extends Token_Parsers
 
     def atEnd: Boolean = in.isEmpty
   }
-
 }
 
 trait Token_Parsers extends Parsers
@@ -96,14 +95,10 @@ trait Token_Parsers extends Parsers
   def p_name: Parser[Elem] = elem("name", _.info.is_name)
 
   /* Args */
-  def p_single_arg(pred: Token => Boolean): Parser[List[Elem]] = p_atom(pred) ^^ {
-    List(_)
-  }
+  def p_single_arg(pred: Token => Boolean): Parser[List[Elem]] = p_atom(pred) ^^ { List(_) }
 
   def p_args(pred: Token => Boolean): Parser[List[Elem]] =
-    (p_sq_bracketed(p_arg(pred).*) | p_parened(p_arg(pred).*)) ^^ {
-      _.flatten
-    }
+    (p_sq_bracketed(p_arg(pred).*) | p_parened(p_arg(pred).*)) ^^ { _.flatten }
 
   def p_arg: Parser[List[Elem]] = p_arg(_ => true)
 
@@ -113,18 +108,17 @@ trait Token_Parsers extends Parsers
   {
     def p_method(isOuter: Boolean = true): Parser[Text.Info[Method]] = {
       val nameParser = if (isOuter) p_name_only else p_name_args
-      (nameParser | p_parened_extend(p_methods)) ~ p_modifier.? ^^ { case body ~ modifier =>
-        add_modifier(body, modifier)
+      (nameParser | p_parened_extend(p_methods)) ~ p_modifier.? ^^ {
+        case body ~ modifier => add_modifier(body, modifier)
       }
     }
 
     def p_methods: Parser[Text.Info[Method]] = p_seq
 
-    def p_name_args: Parser[Text.Info[Method]] = p_name ~ p_method_arg.* ^^ { case name ~ args =>
-      Text.Info(
+    def p_name_args: Parser[Text.Info[Method]] = p_name ~ p_method_arg.* ^^ {
+      case name ~ args => Text.Info(
         list_range(name.range :: args.flatten.map(_.range)),
-        Simple_Method(name, args = args.flatten)
-      )
+        Simple_Method(name, args = args.flatten))
     }
 
     def p_name_only: Parser[Text.Info[Method]] =
@@ -150,22 +144,20 @@ trait Token_Parsers extends Parsers
           ^^^ { (left, right) =>
           Text.Info(
             Text.Range(left.range.start, right.range.stop),
-            Combined_Method(left, combinator, right)
-          )
-        }
-      )
+            Combined_Method(left, combinator, right))
+        })
 
-    def p_try: Parser[Text.Info[Method.Modifier]] = p_keyword("?") ^^ { case Text.Info(range, _) =>
-      Text.Info(range, Method.Modifier.Try)
+    def p_try: Parser[Text.Info[Method.Modifier]] = p_keyword("?") ^^ {
+      case Text.Info(range, _) => Text.Info(range, Method.Modifier.Try)
     }
 
-    def p_rep1: Parser[Text.Info[Method.Modifier]] = p_keyword("+") ^^ { case Text.Info(range, _) =>
-      Text.Info(range, Method.Modifier.Rep1)
+    def p_rep1: Parser[Text.Info[Method.Modifier]] = p_keyword("+") ^^ {
+      case Text.Info(range, _) => Text.Info(range, Method.Modifier.Rep1)
     }
 
     def p_restrict: Parser[Text.Info[Method.Modifier]] = p_sq_bracketed_extend(
-      p_nat ^^ { case Text.Info(range, n) =>
-        Text.Info(range, Method.Modifier.Restrict(n.content.toInt))
+      p_nat ^^ {
+        case Text.Info(range, n) => Text.Info(range, Method.Modifier.Restrict(n.content.toInt))
       }
     )
 
@@ -197,7 +189,6 @@ trait Token_Parsers extends Parsers
           }
       }
     }
-
   }
 
   def p_method: Parser[Text.Info[Method]] = Method_Parsers.p_method()
@@ -229,8 +220,7 @@ trait Token_Parsers extends Parsers
         val methodStop = method2.map(_.range).getOrElse(method1.range).stop
         Text.Info(
           Text.Range(by.range.start, methodStop),
-          By(method1, method2)
-        )
+          By(method1, method2))
     }
 
   def p_counter_example_command: Parser[Text.Info[AST_Node]] =
@@ -244,11 +234,7 @@ trait Token_Parsers extends Parsers
   def p_attribute: Parser[List[Elem]] = (p_ident | p_keyword("=") | p_keyword("!") | p_keyword("?")).*
 
   def p_attributes: Parser[List[List[Elem]]] =
-    chainl1[List[List[Elem]]](p_attribute ^^ {
-      List(_)
-    }, p_keyword(",") ^^^ {
-      _ ::: _
-    })
+    chainl1[List[List[Elem]]](p_attribute ^^ { List(_)}, p_keyword(",") ^^^ { _ ::: _ })
 
   def p_any: Parser[Elem] = elem("any", _ => true)
 
