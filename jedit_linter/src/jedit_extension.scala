@@ -1,3 +1,8 @@
+/* Author: Fabian Huch, TU Muenchen
+
+Various jEdit extensions.
+ */
+
 package isabelle.jedit_linter
 
 import java.lang.invoke.{MethodHandles, VarHandle}

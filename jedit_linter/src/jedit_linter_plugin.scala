@@ -1,3 +1,8 @@
+/* Author: Fabian Huch, TU Muenchen
+
+JEdit plugin setup.
+ */
+
 package isabelle.jedit_linter
 
 import isabelle._

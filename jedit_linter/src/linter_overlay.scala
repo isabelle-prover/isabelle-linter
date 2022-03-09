@@ -1,3 +1,8 @@
+/* Author: Fabian Huch, TU Muenchen
+
+Lint results as stateful command overlay.
+ */
+
 package isabelle.jedit_linter
 
 import isabelle._
