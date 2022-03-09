@@ -14,8 +14,7 @@ object Lint_Store
 {
   private var store: Map[String, Lint] = Map.empty
 
-  def register_lint(lint: Lint): Unit =
-    store += ((lint.name, lint))
+  def register_lint(lint: Lint): Unit = { store += ((lint.name, lint)) }
 
   for (lint <- List(
     Apply_Isar_Switch,
@@ -81,8 +80,8 @@ Print lint descriptions.
 
   /* Bundles */
 
-  case class Bundle(name: String, lint_names: Set[String]) {
-
+  case class Bundle(name: String, lint_names: Set[String])
+  {
     def contains(lint_name : String): Boolean =
       lint_names.contains(lint_name)
   }
@@ -144,8 +143,7 @@ Print lint descriptions.
 
     private var store: Map[String, Bundle] = Map.empty
 
-    def register_bundle(bundle: Bundle): Unit =
-      store += ((bundle.name, bundle))
+    def register_bundle(bundle: Bundle): Unit = { store += ((bundle.name, bundle)) }
 
     for (bundle <- List(
       Bundle.default,
@@ -155,8 +153,7 @@ Print lint descriptions.
       Bundle.pedantic))
     {  register_bundle(bundle) }
 
-    def get_bundle(name: String): Option[Bundle] =
-      store.get(name)
+    def get_bundle(name: String): Option[Bundle] = store.get(name)
 
     def bundles: List[Bundle] = store.values.toList
 
@@ -229,14 +226,12 @@ print the lints belonging to each bundle.
 
   class Selection(private val lints: Set[String])
   {
-    def enable_lint(lint_name: String): Selection =
-      Selection(lints + lint_name)
+    def enable_lint(lint_name: String): Selection = Selection(lints + lint_name)
 
     def enable_lints(lint_names: List[String]): Selection =
       lint_names.foldLeft(this)((config, lint) => config.enable_lint(lint))
 
-    def disable_lint(lint_name: String): Selection =
-      Selection(lints - lint_name)
+    def disable_lint(lint_name: String): Selection = Selection(lints - lint_name)
 
     def disable_lints(lint_names: List[String]): Selection =
       lint_names.foldLeft(this)((config, lint) => config.disable_lint(lint))

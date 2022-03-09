@@ -25,30 +25,23 @@ case class Reference(url: String) extends Description_Element
 
 case class Lint_Description(rev_els: List[Description_Element])
 {
-  def code_block(strs: String*): Lint_Description =
-    add(Code_Block(strs))
+  def code_block(strs: String*): Lint_Description = add(Code_Block(strs))
 
-  def inline_code(str: String): Lint_Description =
-    add(Inline_Code(str))
+  def inline_code(str: String): Lint_Description = add(Inline_Code(str))
 
-  def add(e: Description_Element): Lint_Description =
-    Lint_Description(e :: rev_els)
+  def add(e: Description_Element): Lint_Description = Lint_Description(e :: rev_els)
 
-  def add(str: String): Lint_Description =
-    add(Plain(str))
+  def add(str: String): Lint_Description = add(Plain(str))
 
-  def addln(str: String): Lint_Description =
-    add(Plain(str)).breakline
+  def addln(str: String): Lint_Description = add(Plain(str)).breakline
 
-  def breakline: Lint_Description =
-    add(Line_Break())
+  def breakline: Lint_Description = add(Line_Break())
 
-  def references(url: String): Lint_Description =
-    add(Reference(url))
+  def references(url: String): Lint_Description = add(Reference(url))
 
-  def empty_line: Lint_Description =
-    add(Empty_Line())
+  def empty_line: Lint_Description = add(Empty_Line())
 }
+
 
 /* textual rendering */
 
@@ -62,11 +55,9 @@ abstract class Lint_Description_Renderer
 
 object Markdown_Renderer extends Lint_Description_Renderer
 {
-  def wrap(left: String, right: String)(content: String): String =
-    s"$left$content$right"
+  def wrap(left: String, right: String)(content: String): String = left + content + right
 
-  def wrapTags(tag: String): String => String =
-    wrap("<" + tag + ">", "</" + tag + ">")
+  def wrapTags(tag: String): String => String = wrap("<" + tag + ">", "</" + tag + ">")
 
   private val empty_line: String = "<br /><br />\n"
 

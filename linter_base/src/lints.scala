@@ -14,7 +14,6 @@ import scala.annotation.tailrec
 
 object Apply_Isar_Switch extends Proper_Commands_Lint
 {
-
   val name = "apply_isar_switch"
   val severity: Severity.Level = Severity.Warn
 
@@ -28,7 +27,6 @@ object Apply_Isar_Switch extends Proper_Commands_Lint
       .add("proof that is hard to read without relying on Isabelle. The Isar proof is also ")
       .add("sensitive to the output of the apply script, and might therefore break easily.")
       .references("http://proofcraft.org/blog/isabelle-style.html")
-
 
   @tailrec
   def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
@@ -46,7 +44,7 @@ object Apply_Isar_Switch extends Proper_Commands_Lint
     }
 }
 
-object Use_Apply extends  AST_Lint
+object Use_Apply extends AST_Lint
 {
   val name: String = "use_apply"
   val severity: Severity.Level = Severity.Info
@@ -79,12 +77,10 @@ object Use_Apply extends  AST_Lint
         report("Use \"apply\" instead of \"by\".", proof.range, Some(Edit(proof.range, replacement)))
       case _ => None
     }
-
 }
 
 object Use_By extends Proper_Commands_Lint with Token_Parsers
 {
-
   val name: String = "use_by"
   val severity: Severity.Level = Severity.Info
 
@@ -213,10 +209,8 @@ object Unrestricted_Auto extends Proper_Commands_Lint
     !modifiers.exists(_.isInstanceOf[Method.Modifier.Restrict])
 
   private def is_unrestricted_auto__method(method: Method): Boolean = method match {
-
     case Simple_Method(name, modifiers, _) =>
       name.info.content == "auto" && are_unrestricted(modifiers.map(_.info))
-
     case _ => false
   }
 
@@ -331,7 +325,6 @@ object Global_Attribute_Changes extends Proper_Commands_Lint with Token_Parsers
       .add("Instead, users should use the context, notes or bundle commands.")
       .references("http://proofcraft.org/blog/isabelle-style-part2.html")
 
-
   type Declaration = (String, List[String]) // Identifier, attribute list without whitespaces
 
   private def declaration: Parser[Declaration] = p_ident ~ p_sq_bracketed(p_attributes) ^^ {
@@ -340,12 +333,8 @@ object Global_Attribute_Changes extends Proper_Commands_Lint with Token_Parsers
 
   private def declare_command: Parser[List[Declaration]] =
     p_command("declare") ~> chainl1[List[Declaration]](
-      declaration ^^ {
-        List(_)
-      },
-      p_keyword("and") ^^^ {
-        _ ::: _
-      }
+      declaration ^^ { List(_) },
+      p_keyword("and") ^^^ { _ ::: _ }
     )
 
   private def has_simp(attrs: List[String]): Boolean =
@@ -425,7 +414,6 @@ object Use_Isar extends Single_Command_Lint
 
 object Axiomatization_With_Where extends Single_Command_Lint
 {
-
   val name: String = "axiomatization_with_where"
   val severity: Severity.Level = Severity.Error
 
@@ -449,8 +437,6 @@ object Axiomatization_With_Where extends Single_Command_Lint
         """  all_true: "∀x. P x" and """,
         """all_false: "∀x. ¬P x"""")
       .references("http://proofcraft.org/blog/isabelle-style.html")
-
-
 
   def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] = command.tokens match {
     case RToken(Token.Kind.COMMAND, "axiomatization", _) :: next =>
@@ -593,7 +579,6 @@ object Diagnostic_Command extends Illegal_Command_Lint(
 
 object Counter_Example_Finder_Lint extends AST_Lint
 {
-
   val name: String = "counter_example_finder"
   val severity: Severity.Level = Severity.Error
 
@@ -730,7 +715,6 @@ object Lemma_Transforming_Attribute extends Parser_Lint
 
 object Implicit_Rule extends AST_Lint
 {
-
   val name: String = "implicit_rule"
   val severity: Severity.Level = Severity.Warn
 
@@ -869,7 +853,6 @@ object Complex_Method extends AST_Lint
       .breakline
       .add("- has three or more combinators (").inline_code("|, ;, ,").add("), for example ")
       .inline_code("auto ; rule , (force | blast)").breakline
-
 
   val modifier_length: Int = 1
   val combinator_threshold: Int = 4
