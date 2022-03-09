@@ -1,12 +1,14 @@
 /* Author: Yecine Megdiche, TU Muenchen
 
-Global registration for lints.
+Global registration for lints and bundles.
  */
 
 package isabelle.linter
 
 
 import Linter._
+import isabelle._
+
 import scala.collection.mutable.Map
 
 
@@ -110,6 +112,45 @@ object Lint_Store
         Counter_Example_Finder_Lint.name))
 
     val all = Bundle("all", all_lints.map(_.name).toSet)
+
+    val bundles = List(
+      Bundle.all,
+      Bundle.default,
+      Bundle.afp,
+      Bundle.non_interactive,
+      Bundle.foundational,
+      Bundle.pedantic)
+
+    def print_bundles(progress: Progress = new Progress): Unit =
+    {
+      val header = Utils.HTML.table_header(
+        List(HTML.text("Bundle Name"), HTML.text("Lints")))
+      val rows = bundles.map { bundle =>
+        Utils.HTML.table_row(List(
+          HTML.text(bundle.name),
+          HTML.text(commas(bundle.lint_names.toList.sorted))))
+      }
+
+      progress.echo(XML.string_of_tree(Utils.HTML.mk_table(header, rows)))
+    }
+
+    /* Isabelle tool wrapper */
+
+    val isabelle_tool = Isabelle_Tool("lint_bundles", "print the lints belonging to each bundle.",
+      Scala_Project.here, args =>
+    {
+      val getopts = Getopts("""
+Usage: isabelle lint_bundles
+
+print the lints belonging to each bundle.
+""")
+
+      getopts(args)
+
+      val progress = new Console_Progress()
+
+      progress.interrupt_handler { print_bundles(progress = progress) }
+    })
   }
 
   val bundle_store: Map[String, Bundle] = Map.empty
@@ -120,18 +161,50 @@ object Lint_Store
   def get_bundle(name: String): Option[Bundle] =
     bundle_store.get(name)
 
-  val all_bundles = List(
-    Bundle.all,
-    Bundle.default,
-    Bundle.afp,
-    Bundle.non_interactive,
-    Bundle.foundational,
-    Bundle.pedantic)
 
-  for (bundle <- all_bundles) register_bundle(bundle)
+  for (bundle <- Bundle.bundles) register_bundle(bundle)
 
   def get_bundles_for_lint(lint_name: String): List[String] =
-    all_bundles.tail // Emit the "all" bundle
-      .filter(_.contains(lint_name))
-      .map(_.name)
+  {
+    for {
+      bundle <- Bundle.bundles
+      if bundle != Bundle.all && bundle.contains(lint_name)
+    } yield bundle.name
+  }
+
+  def print_lints(progress: Progress = new Progress): Unit =
+  {
+    val header = Utils.HTML.table_header(
+      List("Name", "Severity", "Short description", "Description", "Bundles").map(HTML.text))
+    val rows = Lint_Store.lints.map { lint =>
+      val row = List(
+        lint.name, lint.severity.toString, Markdown_Renderer.render(lint.short_description),
+        Markdown_Renderer.render(lint.long_description), commas(get_bundles_for_lint(lint.name)))
+      Utils.HTML.table_row(row.map(HTML.text))
+    }
+    progress.echo(XML.string_of_tree(Utils.HTML.mk_table(header, rows)))
+  }
+
+
+  /* Isabelle tool wrapper */
+
+  val isabelle_tool = Isabelle_Tool("lint_descriptions", "print the list of lints with their descriptions",
+    Scala_Project.here, args =>
+    {
+      val getopts = Getopts("""
+Usage: isabelle lint_descriptions
+
+Print lint descriptions.
+""")
+
+      getopts(args)
+
+      val progress = new Console_Progress()
+
+      progress.interrupt_handler { print_lints(progress = progress) }
+    })
 }
+
+class Lint_Bundles extends Isabelle_Scala_Tools(Lint_Store.Bundle.isabelle_tool)
+
+class Lint_Descriptions extends Isabelle_Scala_Tools(Lint_Store.isabelle_tool)

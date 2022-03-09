@@ -9,8 +9,6 @@ sources = \
   src/linter_configuration.scala \
   src/linter_tool.scala \
   src/lints.scala \
-  src/print_lints.scala \
-  src/print_bundles.scala \
   src/lint_description.scala \
   src/markup.scala \
   src/parsers.scala \
