@@ -63,7 +63,7 @@ object Linter_Tool
   }
 
   def lint[A](
-    configuration: Lint_Store.Configuration,
+    lint_selection: Lint_Store.Selection,
     presenter: Presenter[A],
     out_file: Option[Path],
     options: Options,
@@ -119,7 +119,7 @@ object Linter_Tool
                 case Some(snapshot) =>
                   progress.echo_if(verbose, "Processing theory " + snapshot.node_name.toString + " ...")
                   val start = Date.now()
-                  val report = Linter.lint(snapshot, configuration)
+                  val report = Linter.lint(snapshot, lint_selection)
                   val end = Date.now()
 
                   val output = presenter.present_for_snapshot(report)
@@ -207,7 +207,7 @@ Lint isabelle theories.
 
     val progress = new Console_Progress(verbose = verbose_build)
 
-    val configuration = Lint_Store.Configuration(options)
+    val configuration = Lint_Store.Selection(options)
 
     if (list) progress.echo(commas(configuration.get_lints.map(_.name).sorted))
     else {

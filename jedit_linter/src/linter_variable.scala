@@ -16,13 +16,13 @@ class Linter_Variable
   val LINTER_ENABLED_OPTION = "linter"
 
   private var lint_cache: Map[Document.Node.Name, (Document.Version, Linter.Lint_Report)] = Map.empty
-  private var configuration: Lint_Store.Configuration = Lint_Store.Configuration.empty
+  private var lint_selection: Lint_Store.Selection = Lint_Store.Selection.empty
   private var _enabled: Boolean = false
 
   private def update_cache(snapshot: Document.Snapshot): Unit =
   {
     lazy val new_cache =
-      lint_cache + (snapshot.node_name -> (snapshot.version, Linter.lint(snapshot, configuration)))
+      lint_cache + (snapshot.node_name -> (snapshot.version, Linter.lint(snapshot, lint_selection)))
     lint_cache get snapshot.node_name match {
       case None => lint_cache = new_cache
       case Some((version, _)) => if (snapshot.version.id < version.id) lint_cache = new_cache
@@ -33,7 +33,7 @@ class Linter_Variable
 
   def update(options: Options): Unit = synchronized {
     this._enabled = options.bool(LINTER_ENABLED_OPTION)
-    if (_enabled) this.configuration = Lint_Store.Configuration(options)
+    if (_enabled) this.lint_selection = Lint_Store.Selection(options)
   }
 
   def do_lint(snapshot: Document.Snapshot): Unit =

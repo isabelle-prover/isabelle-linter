@@ -207,53 +207,53 @@ Print lint descriptions.
 
   /* Configurations */
 
-  object Configuration
+  object Selection
   {
     val ENABLED_BUNDLES_OPTION = "enabled_bundles"
     val ENABLED_LINTS_OPTION = "enabled_lints"
     val DISABLED_LINTS_OPTION = "disabled_lints"
 
-    def apply(options: Options): Configuration =
+    def apply(options: Options): Selection =
     {
       val bundles = space_explode(',', options.string(ENABLED_BUNDLES_OPTION))
       val enabled_lints = space_explode(',', options.string(ENABLED_LINTS_OPTION))
       val disabled_lints = space_explode(',', options.string(DISABLED_LINTS_OPTION))
 
-      Configuration.empty
+      Selection.empty
         .add_bundles(bundles)
         .enable_lints(enabled_lints)
         .disable_lints(disabled_lints)
     }
 
-    def apply(lints: Set[String]): Configuration = new Configuration(lints)
+    def apply(lints: Set[String]): Selection = new Selection(lints)
 
-    def empty: Configuration = new Configuration(Set.empty)
+    def empty: Selection = new Selection(Set.empty)
   }
 
-  class Configuration(private val lints: Set[String])
+  class Selection(private val lints: Set[String])
   {
-    def enable_lint(lint_name: String): Configuration =
-      Configuration(lints + lint_name)
+    def enable_lint(lint_name: String): Selection =
+      Selection(lints + lint_name)
 
-    def enable_lints(lint_names: List[String]): Configuration =
+    def enable_lints(lint_names: List[String]): Selection =
       lint_names.foldLeft(this)((config, lint) => config.enable_lint(lint))
 
-    def disable_lint(lint_name: String): Configuration =
-      Configuration(lints - lint_name)
+    def disable_lint(lint_name: String): Selection =
+      Selection(lints - lint_name)
 
-    def disable_lints(lint_names: List[String]): Configuration =
+    def disable_lints(lint_names: List[String]): Selection =
       lint_names.foldLeft(this)((config, lint) => config.disable_lint(lint))
 
-    def add_bundle(bundle_name: String): Configuration =
-      (for {bundle <- Lint_Store.get_bundle(bundle_name)} yield {
-        Configuration(lints ++ bundle.lint_names)
+    def add_bundle(bundle_name: String): Selection =
+      (for {bundle <- get_bundle(bundle_name)} yield {
+        Selection(lints ++ bundle.lint_names)
       }).getOrElse(this)
 
-    def add_bundles(bundle_names: List[String]): Configuration =
+    def add_bundles(bundle_names: List[String]): Selection =
       bundle_names.foldLeft(this)((config, bundle) => config.add_bundle(bundle))
 
     def get_lints: List[Linter.Lint] =
-      lints.toList.flatMap(Lint_Store.get_lint).sortBy(_.severity.id)
+      lints.toList.flatMap(get_lint).sortBy(_.severity.id)
   }
 }
 

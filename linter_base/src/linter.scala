@@ -11,14 +11,14 @@ import isabelle._
 
 object Linter
 {
-  def lint(snapshot: Document.Snapshot, configuration: Lint_Store.Configuration): Lint_Report =
+  def lint(snapshot: Document.Snapshot, lint_selection: Lint_Store.Selection): Lint_Report =
   {
     val parsed_commands = snapshot.node
       .command_iterator()
       .map { case (command, offset) => Parsed_Command(command, offset, snapshot) }
       .toList
 
-    configuration.get_lints.foldLeft(Lint_Report.empty)((report, lint) =>
+    lint_selection.get_lints.foldLeft(Lint_Report.empty)((report, lint) =>
       lint.lint(parsed_commands, report))
   }
 
