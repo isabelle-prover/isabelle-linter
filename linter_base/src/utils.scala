@@ -1,4 +1,4 @@
-/* Author: Yecine Megdiche, TU Muenchen
+/* Author: Yecine Megdiche and Fabian Huch, TU Muenchen
 
 Utilities.
  */

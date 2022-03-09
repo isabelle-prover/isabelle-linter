@@ -1,3 +1,8 @@
+/* Author: Yecine Megdiche and Fabian Huch, TU Muenchen
+
+Linter state and snapshot cache.
+ */
+
 package isabelle.jedit_linter
 
 

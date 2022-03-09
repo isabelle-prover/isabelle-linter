@@ -1,3 +1,8 @@
+/* Author: Fabian Huch, TU Muenchen
+
+Linter plugin instance and (de-)activation handling.
+ */
+
 package isabelle.jedit_linter
 
 

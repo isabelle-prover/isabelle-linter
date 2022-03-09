@@ -1,3 +1,8 @@
+/* Author: Yecine Megdiche and Fabian Huch, TU Muenchen
+
+Dockable window for the linter.
+ */
+
 package isabelle.jedit_linter
 
 
