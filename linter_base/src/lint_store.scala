@@ -17,9 +17,7 @@ object Lint_Store
   def register_lint(lint: Lint): Unit =
     store += ((lint.name, lint))
 
-  def get_lint(lint_name: String): Option[Lint] = store.get(lint_name)
-
-  private val lints: List[Lint] = List(
+  for (lint <- List(
     Apply_Isar_Switch,
     Auto_Structural_Composition,
     Axiomatization_With_Where,
@@ -41,136 +39,12 @@ object Lint_Store
     Unrestricted_Auto,
     Use_Apply,
     Use_By,
-    Use_Isar)
+    Use_Isar))
+  { register_lint(lint) }
 
-  private val all_lints: List[Lint] = Print_AST :: lints
+  def get_lint(lint_name: String): Option[Lint] = store.get(lint_name)
 
-  for (lint <- all_lints) register_lint(lint)
-
-
-  /* Bundles */
-
-  case class Bundle(name: String, lint_names: Set[String]) {
-
-    def contains(lint_name : String): Boolean =
-      lint_names.contains(lint_name)
-  }
-
-  object Bundle
-  {
-    val pedantic = Bundle("pedantic", Set(
-      Low_Level_Apply_Chain.name,
-      Use_Isar.name,
-      Short_Name.name,
-      Force_Failure.name,
-      Auto_Structural_Composition.name))
-
-    val non_interactive = Bundle("non_interactive", Set(
-        Unfinished_Proof.name,
-        Proof_Finder.name,
-        Counter_Example_Finder_Lint.name,
-        Diagnostic_Command.name))
-
-    val foundational = Bundle("foundational", Set(
-        Apply_Isar_Switch.name,
-        Bad_Style_Command.name,
-        Complex_Isar_Initial_Method.name,
-        Complex_Method.name,
-        Global_Attribute_Changes.name,
-        Global_Attribute_On_Unnamed_Lemma.name,
-        Lemma_Transforming_Attribute.name,
-        Implicit_Rule.name,
-        Unrestricted_Auto.name,
-        Use_By.name))
-
-    val afp = Bundle("afp", Set(
-        Apply_Isar_Switch.name,
-        Bad_Style_Command.name,
-        Complex_Isar_Initial_Method.name,
-        Counter_Example_Finder_Lint.name,
-        Complex_Method.name,
-        Global_Attribute_Changes.name,
-        Global_Attribute_On_Unnamed_Lemma.name,
-        Lemma_Transforming_Attribute.name,
-        Implicit_Rule.name,
-        Unrestricted_Auto.name,
-        Use_By.name))
-
-    val default = Bundle("default", Set(
-        Apply_Isar_Switch.name,
-        Unrestricted_Auto.name,
-        Low_Level_Apply_Chain.name,
-        Axiomatization_With_Where.name,
-        Bad_Style_Command.name,
-        Global_Attribute_On_Unnamed_Lemma.name,
-        Lemma_Transforming_Attribute.name,
-        Implicit_Rule.name,
-        Complex_Isar_Initial_Method.name,
-        Global_Attribute_Changes.name,
-        Complex_Method.name,
-        Tactic_Proofs.name,
-        Counter_Example_Finder_Lint.name))
-
-    val all = Bundle("all", all_lints.map(_.name).toSet)
-
-    val bundles = List(
-      Bundle.all,
-      Bundle.default,
-      Bundle.afp,
-      Bundle.non_interactive,
-      Bundle.foundational,
-      Bundle.pedantic)
-
-    def print_bundles(progress: Progress = new Progress): Unit =
-    {
-      val header = Utils.HTML.table_header(
-        List(HTML.text("Bundle Name"), HTML.text("Lints")))
-      val rows = bundles.map { bundle =>
-        Utils.HTML.table_row(List(
-          HTML.text(bundle.name),
-          HTML.text(commas(bundle.lint_names.toList.sorted))))
-      }
-
-      progress.echo(XML.string_of_tree(Utils.HTML.mk_table(header, rows)))
-    }
-
-    /* Isabelle tool wrapper */
-
-    val isabelle_tool = Isabelle_Tool("lint_bundles", "print the lints belonging to each bundle.",
-      Scala_Project.here, args =>
-    {
-      val getopts = Getopts("""
-Usage: isabelle lint_bundles
-
-print the lints belonging to each bundle.
-""")
-
-      getopts(args)
-
-      val progress = new Console_Progress()
-
-      progress.interrupt_handler { print_bundles(progress = progress) }
-    })
-  }
-
-  private var bundle_store: Map[String, Bundle] = Map.empty
-
-  def register_bundle(bundle: Bundle): Unit =
-    bundle_store += ((bundle.name, bundle))
-
-  def get_bundle(name: String): Option[Bundle] =
-    bundle_store.get(name)
-
-
-  for (bundle <- Bundle.bundles) register_bundle(bundle)
-
-  def get_bundles_for_lint(lint_name: String): List[String] =
-  {
-    for {
-      bundle <- Bundle.bundles
-      if bundle != Bundle.all && bundle.contains(lint_name)
-    } yield bundle.name
-  }
+  def lints: List[Lint] = store.values.toList
 
   def print_lints(progress: Progress = new Progress): Unit =
   {
@@ -179,7 +53,7 @@ print the lints belonging to each bundle.
     val rows = Lint_Store.lints.map { lint =>
       val row = List(
         lint.name, lint.severity.toString, Markdown_Renderer.render(lint.short_description),
-        Markdown_Renderer.render(lint.long_description), commas(get_bundles_for_lint(lint.name)))
+        Markdown_Renderer.render(lint.long_description), commas(Bundle.get_bundles_for_lint(lint.name)))
       Utils.HTML.table_row(row.map(HTML.text))
     }
     progress.echo(XML.string_of_tree(Utils.HTML.mk_table(header, rows)))
@@ -203,6 +77,129 @@ Print lint descriptions.
 
       progress.interrupt_handler { print_lints(progress = progress) }
     })
+
+
+  /* Bundles */
+
+  case class Bundle(name: String, lint_names: Set[String]) {
+
+    def contains(lint_name : String): Boolean =
+      lint_names.contains(lint_name)
+  }
+
+  object Bundle
+  {
+    val pedantic = Bundle("pedantic", Set(
+      Low_Level_Apply_Chain.name,
+      Use_Isar.name,
+      Short_Name.name,
+      Force_Failure.name,
+      Auto_Structural_Composition.name))
+
+    val non_interactive = Bundle("non_interactive", Set(
+      Unfinished_Proof.name,
+      Proof_Finder.name,
+      Counter_Example_Finder_Lint.name,
+      Diagnostic_Command.name))
+
+    val foundational = Bundle("foundational", Set(
+      Apply_Isar_Switch.name,
+      Bad_Style_Command.name,
+      Complex_Isar_Initial_Method.name,
+      Complex_Method.name,
+      Global_Attribute_Changes.name,
+      Global_Attribute_On_Unnamed_Lemma.name,
+      Lemma_Transforming_Attribute.name,
+      Implicit_Rule.name,
+      Unrestricted_Auto.name,
+      Use_By.name))
+
+    val afp = Bundle("afp", Set(
+      Apply_Isar_Switch.name,
+      Bad_Style_Command.name,
+      Complex_Isar_Initial_Method.name,
+      Counter_Example_Finder_Lint.name,
+      Complex_Method.name,
+      Global_Attribute_Changes.name,
+      Global_Attribute_On_Unnamed_Lemma.name,
+      Lemma_Transforming_Attribute.name,
+      Implicit_Rule.name,
+      Unrestricted_Auto.name,
+      Use_By.name))
+
+    val default = Bundle("default", Set(
+      Apply_Isar_Switch.name,
+      Unrestricted_Auto.name,
+      Low_Level_Apply_Chain.name,
+      Axiomatization_With_Where.name,
+      Bad_Style_Command.name,
+      Global_Attribute_On_Unnamed_Lemma.name,
+      Lemma_Transforming_Attribute.name,
+      Implicit_Rule.name,
+      Complex_Isar_Initial_Method.name,
+      Global_Attribute_Changes.name,
+      Complex_Method.name,
+      Tactic_Proofs.name,
+      Counter_Example_Finder_Lint.name))
+
+    private var store: Map[String, Bundle] = Map.empty
+
+    def register_bundle(bundle: Bundle): Unit =
+      store += ((bundle.name, bundle))
+
+    for (bundle <- List(
+      Bundle.default,
+      Bundle.afp,
+      Bundle.non_interactive,
+      Bundle.foundational,
+      Bundle.pedantic))
+    {  register_bundle(bundle) }
+
+    def get_bundle(name: String): Option[Bundle] =
+      store.get(name)
+
+    def bundles: List[Bundle] = store.values.toList
+
+    def get_bundles_for_lint(lint_name: String): List[String] =
+    {
+      for {
+        bundle <- bundles
+        if bundle.contains(lint_name)
+      } yield bundle.name
+    }
+
+    def print_bundles(progress: Progress = new Progress): Unit =
+    {
+      val header = Utils.HTML.table_header(
+        List(HTML.text("Bundle Name"), HTML.text("Lints")))
+      val rows = bundles.toList.map { bundle =>
+        Utils.HTML.table_row(List(
+          HTML.text(bundle.name),
+          HTML.text(commas(bundle.lint_names.toList.sorted))))
+      }
+
+      progress.echo(XML.string_of_tree(Utils.HTML.mk_table(header, rows)))
+    }
+
+
+    /* Isabelle tool wrapper */
+
+    val isabelle_tool = Isabelle_Tool("lint_bundles", "print the lints belonging to each bundle.",
+      Scala_Project.here, args =>
+    {
+      val getopts = Getopts("""
+Usage: isabelle lint_bundles
+
+print the lints belonging to each bundle.
+""")
+
+      getopts(args)
+
+      val progress = new Console_Progress()
+
+      progress.interrupt_handler { print_bundles(progress = progress) }
+    })
+  }
 
 
   /* Configurations */
@@ -245,7 +242,7 @@ Print lint descriptions.
       lint_names.foldLeft(this)((config, lint) => config.disable_lint(lint))
 
     def add_bundle(bundle_name: String): Selection =
-      (for {bundle <- get_bundle(bundle_name)} yield {
+      (for {bundle <- Bundle.get_bundle(bundle_name)} yield {
         Selection(lints ++ bundle.lint_names)
       }).getOrElse(this)
 
