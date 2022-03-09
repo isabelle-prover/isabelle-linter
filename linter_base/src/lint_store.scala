@@ -1,6 +1,6 @@
 /* Author: Yecine Megdiche, TU Muenchen
 
-Global registration for lints and bundles.
+Registration and configuration for lints and lint bundles.
  */
 
 package isabelle.linter
@@ -9,19 +9,17 @@ package isabelle.linter
 import Linter._
 import isabelle._
 
-import scala.collection.mutable.Map
-
 
 object Lint_Store
 {
-  private val store: Map[String, Lint] = Map.empty
+  private var store: Map[String, Lint] = Map.empty
 
   def register_lint(lint: Lint): Unit =
     store += ((lint.name, lint))
 
   def get_lint(lint_name: String): Option[Lint] = store.get(lint_name)
 
-  val lints: List[Lint] = List(
+  private val lints: List[Lint] = List(
     Apply_Isar_Switch,
     Auto_Structural_Composition,
     Axiomatization_With_Where,
@@ -49,7 +47,9 @@ object Lint_Store
 
   for (lint <- all_lints) register_lint(lint)
 
-  // bundles
+
+  /* Bundles */
+
   case class Bundle(name: String, lint_names: Set[String]) {
 
     def contains(lint_name : String): Boolean =
@@ -153,7 +153,7 @@ print the lints belonging to each bundle.
     })
   }
 
-  val bundle_store: Map[String, Bundle] = Map.empty
+  private var bundle_store: Map[String, Bundle] = Map.empty
 
   def register_bundle(bundle: Bundle): Unit =
     bundle_store += ((bundle.name, bundle))
@@ -203,6 +203,58 @@ Print lint descriptions.
 
       progress.interrupt_handler { print_lints(progress = progress) }
     })
+
+
+  /* Configurations */
+
+  object Configuration
+  {
+    val ENABLED_BUNDLES_OPTION = "enabled_bundles"
+    val ENABLED_LINTS_OPTION = "enabled_lints"
+    val DISABLED_LINTS_OPTION = "disabled_lints"
+
+    def apply(options: Options): Configuration =
+    {
+      val bundles = space_explode(',', options.string(ENABLED_BUNDLES_OPTION))
+      val enabled_lints = space_explode(',', options.string(ENABLED_LINTS_OPTION))
+      val disabled_lints = space_explode(',', options.string(DISABLED_LINTS_OPTION))
+
+      Configuration.empty
+        .add_bundles(bundles)
+        .enable_lints(enabled_lints)
+        .disable_lints(disabled_lints)
+    }
+
+    def apply(lints: Set[String]): Configuration = new Configuration(lints)
+
+    def empty: Configuration = new Configuration(Set.empty)
+  }
+
+  class Configuration(private val lints: Set[String])
+  {
+    def enable_lint(lint_name: String): Configuration =
+      Configuration(lints + lint_name)
+
+    def enable_lints(lint_names: List[String]): Configuration =
+      lint_names.foldLeft(this)((config, lint) => config.enable_lint(lint))
+
+    def disable_lint(lint_name: String): Configuration =
+      Configuration(lints - lint_name)
+
+    def disable_lints(lint_names: List[String]): Configuration =
+      lint_names.foldLeft(this)((config, lint) => config.disable_lint(lint))
+
+    def add_bundle(bundle_name: String): Configuration =
+      (for {bundle <- Lint_Store.get_bundle(bundle_name)} yield {
+        Configuration(lints ++ bundle.lint_names)
+      }).getOrElse(this)
+
+    def add_bundles(bundle_names: List[String]): Configuration =
+      bundle_names.foldLeft(this)((config, bundle) => config.add_bundle(bundle))
+
+    def get_lints: List[Linter.Lint] =
+      lints.toList.flatMap(Lint_Store.get_lint).sortBy(_.severity.id)
+  }
 }
 
 class Lint_Bundles extends Isabelle_Scala_Tools(Lint_Store.Bundle.isabelle_tool)

@@ -11,7 +11,7 @@ import isabelle._
 
 object Linter
 {
-  def lint(snapshot: Document.Snapshot, configuration: Linter_Configuration): Lint_Report =
+  def lint(snapshot: Document.Snapshot, configuration: Lint_Store.Configuration): Lint_Report =
   {
     val parsed_commands = snapshot.node
       .command_iterator()

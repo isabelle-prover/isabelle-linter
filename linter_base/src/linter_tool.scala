@@ -63,7 +63,7 @@ object Linter_Tool
   }
 
   def lint[A](
-    configuration: Linter_Configuration,
+    configuration: Lint_Store.Configuration,
     presenter: Presenter[A],
     out_file: Option[Path],
     options: Options,
@@ -207,7 +207,7 @@ Lint isabelle theories.
 
     val progress = new Console_Progress(verbose = verbose_build)
 
-    val configuration = Linter_Configuration(options)
+    val configuration = Lint_Store.Configuration(options)
 
     if (list) progress.echo(commas(configuration.get_lints.map(_.name).sorted))
     else {
