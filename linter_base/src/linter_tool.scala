@@ -114,10 +114,12 @@ object Linter_Tool
           case None => error("Missing build database for session " + quote(session_name))
           case Some((used_theories, errors, _)) =>
             if (errors.nonEmpty) error(errors.mkString("\n\n"))
-            used_theories.map { thy =>
+            used_theories.flatMap { thy =>
               val thy_heading = "\nTheory " + quote(thy) + ":"
               read_theory(db_context, List(session_name), thy) match {
-                case None => error(thy_heading + " MISSING")
+                case None =>
+                  progress.echo_warning(thy_heading + " missing")
+                  None
                 case Some(snapshot) =>
                   progress.echo_if(verbose, "Processing theory " + snapshot.node_name.toString + " ...")
                   val start = Date.now()
@@ -127,7 +129,7 @@ object Linter_Tool
                   val output = presenter.present_for_snapshot(report)
                   progress.echo_if(verbose, presenter.to_string(output))
 
-                  presenter.with_info(output, snapshot.node_name, end.time - start.time)
+                  Some(presenter.with_info(output, snapshot.node_name, end.time - start.time))
               }
             }
         }
