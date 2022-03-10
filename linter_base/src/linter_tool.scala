@@ -62,6 +62,52 @@ object Linter_Tool
     }
   }
 
+  def lint_session[A](
+    session_name: String,
+    selection: Lint_Store.Selection,
+    presenter: Presenter[A],
+    store: Sessions.Store,
+    deps: Sessions.Deps,
+    verbose: Boolean,
+    progress: Progress): List[A] =
+  {
+    progress.echo("Linting " + session_name)
+
+    val base = deps.get(session_name).getOrElse(error("No base for " + session_name))
+    val theories = base.session_theories.map(_.theory)
+
+    using(store.open_database_context())(db_context => {
+      val result =
+        db_context.input_database(session_name)((db, _) => {
+          val errors = store.read_errors(db, session_name)
+          store.read_build(db, session_name).map(info => (theories, errors, info.return_code))
+        })
+      result match {
+        case None => error("Missing build database for session " + quote(session_name))
+        case Some((used_theories, errors, _)) =>
+          if (errors.nonEmpty) error(errors.mkString("\n\n"))
+          used_theories.flatMap { thy =>
+            val thy_heading = "\nTheory " + quote(thy) + ":"
+            progress.echo_if(verbose, "Processing " + thy + " ...")
+            read_theory(db_context, List(session_name), thy) match {
+              case None =>
+                progress.echo_warning(thy_heading + " missing")
+                None
+              case Some(snapshot) =>
+                val start = Date.now()
+                val report = Linter.lint(snapshot, selection)
+                val end = Date.now()
+
+                val output = presenter.present_for_snapshot(report)
+                progress.echo_if(verbose, { presenter.to_string(output) })
+
+                Some(presenter.with_info(output, snapshot.node_name, end.time - start.time))
+            }
+          }
+      }
+    })
+  }
+
   def lint[A](
     lint_selection: Lint_Store.Selection,
     presenter: Presenter[A],
@@ -90,51 +136,19 @@ object Linter_Tool
         verbose = verbose_build)
     if (!res.ok) System.exit(res.rc)
 
+    val store = Sessions.store(options)
+
     val full_sessions =
       Sessions.load_structure(options = options, dirs = dirs, select_dirs = select_dirs)
 
     val sessions_structure = full_sessions.selection(selection)
     val deps = Sessions.deps(sessions_structure)
 
-    val reports = sessions_structure.build_selection(selection).flatMap { session_name =>
-      progress.echo("Linting " + session_name)
-
-      val base = deps.get(session_name).getOrElse(error("No base for " + session_name))
-      val theories = base.session_theories.map(_.theory)
-
-      val store = Sessions.store(options)
-
-      using(store.open_database_context())(db_context => {
-        val result =
-          db_context.input_database(session_name)((db, _) => {
-            val errors = store.read_errors(db, session_name)
-            store.read_build(db, session_name).map(info => (theories, errors, info.return_code))
-          })
-        result match {
-          case None => error("Missing build database for session " + quote(session_name))
-          case Some((used_theories, errors, _)) =>
-            if (errors.nonEmpty) error(errors.mkString("\n\n"))
-            used_theories.flatMap { thy =>
-              val thy_heading = "\nTheory " + quote(thy) + ":"
-              progress.echo_if(verbose, "Processing " + thy + " ...")
-              read_theory(db_context, List(session_name), thy) match {
-                case None =>
-                  progress.echo_warning(thy_heading + " missing")
-                  None
-                case Some(snapshot) =>
-                  val start = Date.now()
-                  val report = Linter.lint(snapshot, lint_selection)
-                  val end = Date.now()
-
-                  val output = presenter.present_for_snapshot(report)
-                  progress.echo_if(verbose, presenter.to_string(output))
-
-                  Some(presenter.with_info(output, snapshot.node_name, end.time - start.time))
-              }
-            }
-        }
-      })
-    }
+    val reports = sessions_structure.build_selection(selection).map(session_name =>
+      Future.fork {
+        lint_session(session_name, selection = lint_selection, presenter = presenter, store = store,
+          deps = deps, verbose = verbose, progress = progress)
+      }).flatMap (_.join)
 
     out_file.foreach { file => File.write(file, presenter.mk_string(reports))}
   }
