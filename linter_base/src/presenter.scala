@@ -59,7 +59,7 @@ object JSON_Presenter extends Presenter[JSON.T]
     JSON.Object(
       "theory" -> node.toString,
       "report" -> report,
-      "timing" -> elapsed)
+      "timing" -> elapsed.ms)
 }
 
 object Text_Presenter extends Presenter[String]
