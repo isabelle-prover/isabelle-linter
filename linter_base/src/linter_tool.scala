@@ -93,12 +93,14 @@ object Linter_Tool
     val full_sessions =
       Sessions.load_structure(options = options, dirs = dirs, select_dirs = select_dirs)
 
-    val deps = Sessions.deps(full_sessions.selection(selection))
+    val sessions_structure = full_sessions.selection(selection)
+    val deps = Sessions.deps(sessions_structure)
 
-    val reports = full_sessions.imports_selection(selection).flatMap { session_name =>
+    val reports = sessions_structure.imports_topological_order.flatMap { session_name =>
       progress.echo("Linting " + session_name)
 
-      val theories = deps.get(session_name).get.session_theories.map(_.theory)
+      val base = deps.get(session_name).getOrElse(error("No base for " + session_name))
+      val theories = base.session_theories.map(_.theory)
 
       val store = Sessions.store(options)
 
