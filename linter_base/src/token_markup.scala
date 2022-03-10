@@ -81,6 +81,7 @@ object Token_Markup
     def find_span(t: XML.Tree): Option[String] = t match {
       case XML.Elem(Markup.Command_Span(name), _) => Some(name)
       case XML.Elem(_, body) => body.collectFirst((find_span _).unlift)
+      case _ => None
     }
 
     @tailrec
@@ -117,7 +118,9 @@ object Token_Markup
                 val kind1 = Command_Span.Command_Span(kind, Position.Range(Text.Range(start, stop)))
                 val span = Command_Span.Span(kind1, List(Token(Kind.COMMAND, kind)))
                 reduce(stop, body1, res :+ (span, start))
-              case _ => error("Not a command span: " + t)
+              case _ =>
+                val span = Command_Span.Span(Command_Span.Ignored_Span, map_tokens(t))
+                reduce(start + XML.text_length(List(t)), body1, res :+ (span, start))
             }
           }
         case Nil => res.map(_._1)

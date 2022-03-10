@@ -116,12 +116,12 @@ object Linter_Tool
             if (errors.nonEmpty) error(errors.mkString("\n\n"))
             used_theories.flatMap { thy =>
               val thy_heading = "\nTheory " + quote(thy) + ":"
+              progress.echo_if(verbose, "Processing " + thy + " ...")
               read_theory(db_context, List(session_name), thy) match {
                 case None =>
                   progress.echo_warning(thy_heading + " missing")
                   None
                 case Some(snapshot) =>
-                  progress.echo_if(verbose, "Processing theory " + snapshot.node_name.toString + " ...")
                   val start = Date.now()
                   val report = Linter.lint(snapshot, lint_selection)
                   val end = Date.now()
