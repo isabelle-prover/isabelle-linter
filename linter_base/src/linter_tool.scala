@@ -96,7 +96,7 @@ object Linter_Tool
     val sessions_structure = full_sessions.selection(selection)
     val deps = Sessions.deps(sessions_structure)
 
-    val reports = sessions_structure.imports_topological_order.flatMap { session_name =>
+    val reports = sessions_structure.build_selection(selection).flatMap { session_name =>
       progress.echo("Linting " + session_name)
 
       val base = deps.get(session_name).getOrElse(error("No base for " + session_name))
