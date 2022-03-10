@@ -221,6 +221,8 @@ Lint isabelle theories.
       "v" -> (_ => verbose = true),
       "x:" -> (arg => exclude_sessions = exclude_sessions ::: List(arg)))
 
+    if (!verbose && output_file.isEmpty) { verbose = true }
+
     val sessions = getopts(args)
 
     val progress = new Console_Progress(verbose = verbose_build)
