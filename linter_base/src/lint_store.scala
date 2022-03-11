@@ -88,58 +88,43 @@ Print lint descriptions.
 
   object Bundle
   {
-    val pedantic = Bundle("pedantic", Set(
-      Low_Level_Apply_Chain.name,
-      Use_Isar.name,
-      Short_Name.name,
-      Force_Failure.name,
-      Auto_Structural_Composition.name))
-
-    val non_interactive = Bundle("non_interactive", Set(
+    val afp_mandatory = Bundle("afp_mandatory", Set(
       Unfinished_Proof.name,
-      Proof_Finder.name,
+      Bad_Style_Command.name,
       Counter_Example_Finder_Lint.name,
-      Diagnostic_Command.name))
+      Global_Attribute_On_Unnamed_Lemma.name))
 
     val foundational = Bundle("foundational", Set(
       Apply_Isar_Switch.name,
+      Auto_Structural_Composition.name,
       Bad_Style_Command.name,
       Complex_Isar_Initial_Method.name,
       Complex_Method.name,
       Global_Attribute_Changes.name,
       Global_Attribute_On_Unnamed_Lemma.name,
-      Lemma_Transforming_Attribute.name,
       Implicit_Rule.name,
-      Unrestricted_Auto.name,
-      Use_By.name))
-
-    val afp = Bundle("afp", Set(
-      Apply_Isar_Switch.name,
-      Bad_Style_Command.name,
-      Complex_Isar_Initial_Method.name,
-      Counter_Example_Finder_Lint.name,
-      Complex_Method.name,
-      Global_Attribute_Changes.name,
-      Global_Attribute_On_Unnamed_Lemma.name,
       Lemma_Transforming_Attribute.name,
-      Implicit_Rule.name,
-      Unrestricted_Auto.name,
-      Use_By.name))
-
-    val default = Bundle("default", Set(
-      Apply_Isar_Switch.name,
-      Unrestricted_Auto.name,
       Low_Level_Apply_Chain.name,
-      Axiomatization_With_Where.name,
-      Bad_Style_Command.name,
-      Global_Attribute_On_Unnamed_Lemma.name,
-      Lemma_Transforming_Attribute.name,
       Implicit_Rule.name,
-      Complex_Isar_Initial_Method.name,
-      Global_Attribute_Changes.name,
-      Complex_Method.name,
       Tactic_Proofs.name,
-      Counter_Example_Finder_Lint.name))
+      Unrestricted_Auto.name))
+
+    val default = Bundle("default", foundational.lint_names ++ Set(
+      Axiomatization_With_Where.name,
+      Short_Name.name))
+
+
+    /* Add-on bundles */
+
+    val non_interactive_addon = Bundle("non_interactive_addon", Set(
+      Counter_Example_Finder_Lint.name,
+      Diagnostic_Command.name,
+      Proof_Finder.name,
+      Unfinished_Proof.name))
+
+    val pedantic_addon = Bundle("pedantic_addon", Set(
+      Force_Failure.name,
+      Use_Isar.name))
 
     private var store: Map[String, Bundle] = Map.empty
 
@@ -147,10 +132,10 @@ Print lint descriptions.
 
     for (bundle <- List(
       Bundle.default,
-      Bundle.afp,
-      Bundle.non_interactive,
+      Bundle.afp_mandatory,
+      Bundle.non_interactive_addon,
       Bundle.foundational,
-      Bundle.pedantic))
+      Bundle.pedantic_addon))
     {  register_bundle(bundle) }
 
     def get_bundle(name: String): Option[Bundle] = store.get(name)
