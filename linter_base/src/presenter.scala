@@ -6,9 +6,6 @@ Lint report presentation in different formats.
 package isabelle.linter
 
 
-import isabelle.Document.Node
-import isabelle.JSON.T
-import isabelle.XML.Body
 import isabelle._
 
 
@@ -45,7 +42,7 @@ object JSON_Presenter extends Presenter[JSON.T]
   override def to_string(report: JSON.T): String =
     JSON.Format.apply(report)
 
-  override def mk_string(reports: List[T]): String =
+  override def mk_string(reports: List[JSON.T]): String =
     JSON.Format.apply(JSON.Object("reports" -> reports))
 
   override def present_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): JSON.T =
@@ -55,7 +52,7 @@ object JSON_Presenter extends Presenter[JSON.T]
     show_descriptions: Boolean = false): JSON.T =
     JSON.Object("results" -> lint_report.results.map(report_result))
 
-  override def with_info(report: T, node: Node.Name, elapsed: Time): T =
+  override def with_info(report: JSON.T, node: Document.Node.Name, elapsed: Time): JSON.T =
     JSON.Object(
       "theory" -> node.toString,
       "report" -> report,
@@ -131,7 +128,7 @@ object Text_Presenter extends Presenter[String]
     show_descriptions: Boolean = false): String =
     report_results(lint_report.results)
 
-  override def with_info(report: String, node: Node.Name, elapsed: Time): String =
+  override def with_info(report: String, node: Document.Node.Name, elapsed: Time): String =
     "Linted " + node + " in " + elapsed + ":\n" + report
 }
 
@@ -216,7 +213,7 @@ object XML_Presenter extends Presenter[XML.Body]
 
   override def to_string(report: XML.Body): String = XML.string_of_body(report)
 
-  override def mk_string(reports: List[Body]): String =
+  override def mk_string(reports: List[XML.Body]): String =
     XML.string_of_tree(XML.Elem(Markup("reports", Nil), reports.flatten))
 
   override def present_for_command(lint_report: Linter.Lint_Report,
@@ -234,7 +231,7 @@ object XML_Presenter extends Presenter[XML.Body]
       compact = false,
       show_descriptions = show_descriptions)
 
-  override def with_info(report: Body, node: Node.Name, elapsed: Time): Body =
+  override def with_info(report: XML.Body, node: Document.Node.Name, elapsed: Time): XML.Body =
     List(XML.Elem(Markup("report",
       Linter_Markup.Theory(node.toString) ::: Linter_Markup.Timing(elapsed.ms)), report))
 }
