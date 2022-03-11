@@ -203,15 +203,11 @@ print the lints belonging to each bundle.
 
   object Selection
   {
-    val ENABLED_BUNDLES_OPTION = "enabled_bundles"
-    val ENABLED_LINTS_OPTION = "enabled_lints"
-    val DISABLED_LINTS_OPTION = "disabled_lints"
-
     def apply(options: Options): Selection =
     {
-      val bundles = space_explode(',', options.string(ENABLED_BUNDLES_OPTION))
-      val enabled_lints = space_explode(',', options.string(ENABLED_LINTS_OPTION))
-      val disabled_lints = space_explode(',', options.string(DISABLED_LINTS_OPTION))
+      val bundles = space_explode(',', options.string("lint_bundles"))
+      val enabled_lints = space_explode(',', options.string("lints_enabled"))
+      val disabled_lints = space_explode(',', options.string("lints_disabled"))
 
       Selection.empty
         .add_bundles(bundles)

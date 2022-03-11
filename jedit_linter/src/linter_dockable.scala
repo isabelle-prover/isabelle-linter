@@ -92,12 +92,12 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
 
   /* controls */
 
-  private def lint_all: Boolean = PIDE.options.bool("lint_all")
+  private def lint_all: Boolean = PIDE.options.bool(LINT_ALL)
 
   private def lint_all_=(b: Boolean): Unit =
   {
     if (lint_all != b) {
-      PIDE.options.bool("lint_all") = b
+      PIDE.options.bool(LINT_ALL) = b
       PIDE.editor.flush_edits(hidden = true)
       PIDE.editor.flush()
     }
@@ -111,12 +111,12 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
     selected = lint_all
   }
 
-  private def show_descriptions: Boolean = PIDE.options.bool("show_descriptions")
+  private def show_descriptions: Boolean = PIDE.options.bool("lint_descriptions")
 
   private def show_descriptions_=(b: Boolean): Unit =
   {
     if (show_descriptions != b) {
-      PIDE.options.bool("show_descriptions") = b
+      PIDE.options.bool(LINT_DESCRIPTIONS) = b
       PIDE.editor.flush_edits(hidden = true)
       PIDE.editor.flush()
     }
@@ -139,12 +139,12 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
     reactions += { case ButtonClicked(_) => handle_lint() }
   }
 
-  private def linter: Boolean = PIDE.options.bool("linter")
+  private def linter: Boolean = PIDE.options.bool("linter_enabled")
 
   private def linter_=(b: Boolean): Unit =
   {
     if (linter != b) {
-      PIDE.options.bool("linter") = b
+      PIDE.options.bool("linter_enabled") = b
       Linter_Plugin.instance.foreach { plugin =>
         plugin.linter.update(PIDE.options.value)
         plugin.overlays.clear()

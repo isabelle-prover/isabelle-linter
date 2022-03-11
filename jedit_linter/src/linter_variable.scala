@@ -13,8 +13,6 @@ import isabelle.linter._
 
 class Linter_Variable
 {
-  val LINTER_ENABLED_OPTION = "linter"
-
   private var lint_cache: Map[Document.Node.Name, (Document.Version, Linter.Lint_Report)] = Map.empty
   private var lint_selection: Lint_Store.Selection = Lint_Store.Selection.empty
   private var _enabled: Boolean = false
@@ -32,7 +30,7 @@ class Linter_Variable
   def enabled: Boolean = _enabled
 
   def update(options: Options): Unit = synchronized {
-    this._enabled = options.bool(LINTER_ENABLED_OPTION)
+    this._enabled = options.bool("linter_enabled")
     if (_enabled) this.lint_selection = Lint_Store.Selection(options)
   }
 

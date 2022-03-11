@@ -1,10 +1,10 @@
 section "Linter"
 
-public option linter : bool = true
+public option linter_enabled : bool = true
   -- "enable linter"
 
 public option lint_all : bool = true
   -- "display the lints of the whole document"
 
-public option show_descriptions : bool = true
+public option lint_descriptions : bool = true
   -- "display the descriptions of the lints"

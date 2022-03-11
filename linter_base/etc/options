@@ -1,10 +1,10 @@
 section "Linter"
 
-public option enabled_bundles : string = "default"
+public option lint_bundles : string = "default"
   -- "enabled lint bundles"
 
-public option enabled_lints : string = ""
+public option lints_enabled : string = ""
   -- "extra enabled lints"
 
-public option disabled_lints : string = ""
+public option lints_disabled : string = ""
   -- "disabled lints"
