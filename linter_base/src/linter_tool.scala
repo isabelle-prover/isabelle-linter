@@ -144,11 +144,10 @@ object Linter_Tool
     val sessions_structure = full_sessions.selection(selection)
     val deps = Sessions.deps(sessions_structure)
 
-    val reports = sessions_structure.build_selection(selection).map(session_name =>
-      Future.fork {
-        lint_session(session_name, selection = lint_selection, presenter = presenter, store = store,
-          deps = deps, verbose = verbose, progress = progress)
-      }).flatMap (_.join)
+    val reports = sessions_structure.build_selection(selection).map(session_name => Future.fork {
+      lint_session(session_name, selection = lint_selection, presenter = presenter, store = store,
+        deps = deps, verbose = verbose, progress = progress)
+      }).flatMap(_.join)
 
     out_file.foreach { file => File.write(file, presenter.mk_string(reports))}
   }
