@@ -50,10 +50,11 @@ object Lint_Store
     val header = Utils.HTML.table_header(
       List("Name", "Severity", "Short description", "Description", "Bundles").map(HTML.text))
     val rows = Lint_Store.lints.map { lint =>
-      val row = List(
-        lint.name, lint.severity.toString, Markdown_Renderer.render(lint.short_description),
-        Markdown_Renderer.render(lint.long_description), commas(Bundle.get_bundles_for_lint(lint.name)))
-      Utils.HTML.table_row(row.map(HTML.text))
+      val row = List(HTML.text(lint.name), HTML.text(lint.severity.toString),
+        Lint_Description.Markdown_Presentation.render(lint.short_description),
+        Lint_Description.Markdown_Presentation.render(lint.long_description),
+        HTML.text(commas(Bundle.get_bundles_for_lint(lint.name))))
+      Utils.HTML.table_row(row)
     }
     progress.echo(XML.string_of_tree(Utils.HTML.mk_table(header, rows)))
   }

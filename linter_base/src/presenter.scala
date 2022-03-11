@@ -171,7 +171,8 @@ object XML_Presenter extends Presenter[XML.Body]
           ::: text(s"\n    Severity: ${lint_result.severity}")
           :::
           (if (show_descriptions)
-            text(s"\n    Description: ${XML_Renderer.render(lint_result.short_description)}")
+            text(s"\n    Description: ") :::
+              Lint_Description.XML_Presentation.render(lint_result.short_description)
            else Nil))
       }
     add_meta(inner, lint_result)

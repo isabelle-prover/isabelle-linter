@@ -9,11 +9,6 @@ package isabelle.linter
 import isabelle._
 
 
-object Lint_Description
-{
-  val empty: Lint_Description = Lint_Description(Nil)
-}
-
 abstract class Description_Element
 
 case class Inline_Code(str: String) extends Description_Element
@@ -42,49 +37,45 @@ case class Lint_Description(rev_els: List[Description_Element])
   def empty_line: Lint_Description = add(Empty_Line())
 }
 
-
-/* textual rendering */
-
-abstract class Lint_Description_Renderer
+object Lint_Description
 {
-  def render(e: Description_Element): String
+  val empty: Lint_Description = Lint_Description(Nil)
 
-  def render(description: Lint_Description): String =
-    description.rev_els.reverse.map(render).mkString
-}
 
-object Markdown_Renderer extends Lint_Description_Renderer
-{
-  def wrap(left: String, right: String)(content: String): String = left + content + right
+  /* textual rendering */
 
-  def wrapTags(tag: String): String => String = wrap("<" + tag + ">", "</" + tag + ">")
+  trait Presentation
+  {
+    def render(e: Description_Element): XML.Body
 
-  private val empty_line: String = "<br /><br />\n"
+    def render(description: Lint_Description): XML.Body =
+      description.rev_els.reverse.flatMap(render)
+  }
 
-  private def sanitize(s: String): String =
-    s.replace("<", "&lt").replace(">", "&gt")
-
-  override def render(e: Description_Element): String =
-    e match {
-      case Inline_Code(str) => wrapTags("code")(sanitize(str))
-      case Plain(str) => sanitize(str)
-      case Line_Break() => "\n"
-      case Empty_Line() => empty_line
-      case Code_Block(strs) =>
-        wrap("\n```isabelle\n", "\n```\n")(strs.map(sanitize).mkString("\n"))
-      case Reference(url) => empty_line + "\nReferences: " + sanitize(url)
+  object Markdown_Presentation extends Presentation
+  {
+    override def render(e: Description_Element): XML.Body = e match {
+      case Inline_Code(str) => List(HTML.code(HTML.text(str)))
+      case Plain(str) => HTML.text(str)
+      case Line_Break() => HTML.text("\n")
+      case Empty_Line() => HTML.break ++ HTML.break
+      case Code_Block(strs) => HTML.text("\n```isabelle\n" + strs.mkString("\n") + "\n```\n")
+      case Reference(url) => HTML.break ++ HTML.break :+ HTML.link(url, HTML.text("\nReference"))
     }
-}
+  }
 
-object XML_Renderer extends Lint_Description_Renderer
-{
-  override def render(e: Description_Element): String =
-    e match {
-      case Inline_Code(str) => Library.quote(str)
-      case Plain(str) => str
-      case Line_Break() => "\n"
-      case Empty_Line() => "\n\n"
-      case Code_Block(strs) => strs.mkString("\n")
-      case Reference(url) => "\nReferences:" + url
-    }
+  object XML_Presentation extends Presentation
+  {
+    def render_string(e: Description_Element): String =
+      e match {
+        case Inline_Code(str) => Library.quote(str)
+        case Plain(str) => str
+        case Line_Break() => "\n"
+        case Empty_Line() => "\n\n"
+        case Code_Block(strs) => strs.mkString("\n")
+        case Reference(url) => "\nReferences:" + url
+      }
+
+    override def render(e: Description_Element): XML.Body = List(XML.Text(render_string(e)))
+  }
 }
