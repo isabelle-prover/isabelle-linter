@@ -92,12 +92,12 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
 
   /* controls */
 
-  private def lint_all: Boolean = PIDE.options.bool(LINT_ALL)
+  private def lint_all: Boolean = PIDE.options.bool("lint_all")
 
   private def lint_all_=(b: Boolean): Unit =
   {
     if (lint_all != b) {
-      PIDE.options.bool(LINT_ALL) = b
+      PIDE.options.bool("lint_all") = b
       PIDE.editor.flush_edits(hidden = true)
       PIDE.editor.flush()
     }
@@ -116,7 +116,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
   private def show_descriptions_=(b: Boolean): Unit =
   {
     if (show_descriptions != b) {
-      PIDE.options.bool(LINT_DESCRIPTIONS) = b
+      PIDE.options.bool("lint_descriptions") = b
       PIDE.editor.flush_edits(hidden = true)
       PIDE.editor.flush()
     }
