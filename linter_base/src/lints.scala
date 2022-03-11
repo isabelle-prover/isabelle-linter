@@ -191,6 +191,8 @@ object Unrestricted_Auto extends Proper_Commands_Lint
   val name: String = "unrestricted_auto"
   val severity: Severity.Level = Severity.Error
 
+  private val PROOF_COMMANDS = List("apply", "by", "proof", "using", "unfolding", "supply", "subgoal")
+
   val short_description: Lint_Description =
     Lint_Description.empty
       .inline_code("auto").add(" should be used as a terminal proof method or be restricted.")
@@ -203,7 +205,7 @@ object Unrestricted_Auto extends Proper_Commands_Lint
       .references("http://proofcraft.org/blog/isabelle-style.html")
 
   private def is_proof_command(command: Parsed_Command): Boolean =
-    List("apply", "by", "proof").contains(command.kind)
+    PROOF_COMMANDS.contains(command.kind)
 
   private def are_unrestricted(modifiers: List[Method.Modifier]): Boolean =
     !modifiers.exists(_.isInstanceOf[Method.Modifier.Restrict])
