@@ -490,6 +490,31 @@ object Unfinished_Proof extends Illegal_Command_Lint(
     Severity.Error,
     "This lint detects unfinished proofs, characterized by the following commands")
 
+object SMT_Oracle extends Parser_Lint
+{
+  val name = "smt_oracle"
+  val severity = Severity.Error
+
+  val short_description = Lint_Description.empty
+    .add("SMT oracle proofs should not be trusted, as they might not be suitable Isabelle proofs.")
+  val long_description = Lint_Description.empty
+    .add("Using ").inline_code("declare [[smt_oracle]]").add(" will make all smt act as an oracle.")
+    .add(" This might prove to be problematic, as oracle proofs are usually not to be trusted.")
+
+  private def is_smt_oracle(attr: List[Elem]): Boolean =
+    attr.headOption.exists(_.info.content == "smt_oracle")
+
+  override def parser(report: Reporter): Parser[Some[Lint_Result]] =
+    p_command("declare") ~> p_sq_bracketed(p_sq_bracketed(
+      p_attributes >> {
+        _.find(is_smt_oracle) match {
+          case None => failure("no match")
+          case Some(tokens) =>
+            success(report("Do not use smt_oracle.", tokens.head.range, None))
+        }
+      }))
+}
+
 object Proof_Finder extends Illegal_Command_Lint(
     "Remove proof finder command.",
     "proof_finder",
