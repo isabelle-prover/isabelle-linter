@@ -33,6 +33,7 @@ object Lint_Store
     Low_Level_Apply_Chain,
     Proof_Finder,
     Short_Name,
+    SMT_Oracle,
     Tactic_Proofs,
     Unfinished_Proof,
     Unrestricted_Auto,
@@ -93,7 +94,8 @@ Print lint descriptions.
       Unfinished_Proof.name,
       Bad_Style_Command.name,
       Counter_Example_Finder_Lint.name,
-      Global_Attribute_On_Unnamed_Lemma.name))
+      Global_Attribute_On_Unnamed_Lemma.name,
+      SMT_Oracle.name))
 
     val foundational = Bundle("foundational", Set(
       Apply_Isar_Switch.name,
@@ -112,7 +114,8 @@ Print lint descriptions.
 
     val default = Bundle("default", foundational.lint_names ++ Set(
       Axiomatization_With_Where.name,
-      Short_Name.name))
+      Short_Name.name,
+      SMT_Oracle.name))
 
 
     /* Add-on bundles */
