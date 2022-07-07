@@ -25,17 +25,11 @@ object JEdit_Extension
     lookup.findVarHandle(classOf[Field], "modifiers", classOf[Int])
   }
 
-  private def set_modifiers(handle: VarHandle, field: Field, mods: Int): Unit =
-  {
-    // do not inline this method, otherwise the scala compiler will fail
-    handle.set(field, mods)
-  }
-
   private def remove_final(field: Field) =
   {
     field.setAccessible(true)
     val mods = field.getModifiers & ~Modifier.FINAL
-    set_modifiers(handle, field, mods)
+    Jedit_Extension.set_modifiers(handle, field, mods)
     field
   }
 
