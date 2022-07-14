@@ -29,7 +29,7 @@ object JEdit_Extension
   {
     field.setAccessible(true)
     val mods = field.getModifiers & ~Modifier.FINAL
-    Jedit_Extension.set_modifiers(handle, field, mods)
+    Handle.set_modifiers(handle, field, mods)
     field
   }
 
