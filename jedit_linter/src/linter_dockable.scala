@@ -32,12 +32,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
   /* resize */
 
   private def handle_resize(): Unit =
-  {
-    GUI_Thread.require {}
-
-    pretty_text_area.resize(
-      Font_Info.main(PIDE.options.real("jedit_font_scale") * zoom.factor / 100))
-  }
+    GUI_Thread.require { pretty_text_area.zoom(zoom) }
 
 
   /* update */
@@ -160,7 +155,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
     selected = linter
   }
 
-  private val zoom = new Font_Info.Zoom_Box { def changed = handle_resize() }
+  private val zoom = new Font_Info.Zoom { override def changed(): Unit = handle_resize() }
 
   private val controls =
     Wrap_Panel(List(linter_button, auto_lint_button, lint_all_button, show_descriptions_checkbox, lint_button, zoom))

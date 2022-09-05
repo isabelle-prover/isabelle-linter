@@ -15,22 +15,27 @@ import scala.collection.mutable.ListBuffer
 
 object Linter_Tool
 {
-  def read_theory(
-    db_context: Sessions.Database_Context,
-    session_hierarchy: List[String],
-    theory: String): Option[Snapshot] =
+  def read_theory(theory_context: Export.Theory_Context): Option[Snapshot] =
   {
     def read(name: String): Export.Entry =
-      db_context.get_export(session_hierarchy, theory, name)
+      theory_context(name, permissive = true)
 
     def read_xml(name: String): XML.Body =
       YXML.parse_body(
         Symbol.output(unicode_symbols = false, UTF8.decode_permissive(read(name).uncompressed)),
-        cache = db_context.cache)
+        cache = theory_context.cache)
 
-    split_lines(read(Export.FILES).text).headOption map
-    { thy_file =>
-      val node_name = Resources.file_node(Path.explode(thy_file), theory = theory)
+    for {
+      (thy_file, _) <- theory_context.files(permissive = true)
+    }
+    yield {
+      val master_dir =
+        Thy_Header.split_file_name(thy_file) match {
+          case Some((dir, _)) => dir
+          case None => error("Cannot determine theory master directory: " + quote(thy_file))
+        }
+      val node_name =
+        Document.Node.Name(thy_file, master_dir = master_dir, theory = theory_context.theory)
 
       val thy_xml = read_xml(Export.MARKUP)
       val command_spans = Token_Markup.from_xml(thy_xml)
@@ -74,14 +79,16 @@ object Linter_Tool
     progress.echo("Linting " + session_name)
 
     val base = deps.get(session_name).getOrElse(error("No base for " + session_name))
-    val theories = base.session_theories.map(_.theory)
+    val theories = base.proper_session_theories.map(_.theory)
 
-    using(store.open_database_context())(db_context => {
+    using(Export.open_session_context0(store, session_name))(session_context => {
       val result =
-        db_context.input_database(session_name)((db, _) => {
-          val errors = store.read_errors(db, session_name)
-          store.read_build(db, session_name).map(info => (theories, errors, info.return_code))
-        })
+        for {
+          db <- session_context.session_db()
+          theories = store.read_theories(db, session_name)
+          errors = store.read_errors(db, session_name)
+          info <- store.read_build(db, session_name)
+        } yield (theories, errors, info.return_code)
       result match {
         case None => error("Missing build database for session " + quote(session_name))
         case Some((used_theories, errors, _)) =>
@@ -89,7 +96,7 @@ object Linter_Tool
           used_theories.flatMap { thy =>
             val thy_heading = "\nTheory " + quote(thy) + ":"
             progress.echo_if(verbose, "Processing " + thy + " ...")
-            read_theory(db_context, List(session_name), thy) match {
+            read_theory(session_context.theory(thy)) match {
               case None =>
                 progress.echo_warning(thy_heading + " missing")
                 None
