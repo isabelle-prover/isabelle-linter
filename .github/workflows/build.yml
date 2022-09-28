@@ -1,0 +1,12 @@
+name: Build
+on: [push, repository_dispatch]
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: git clone --depth 1 https://github.com/isabelle-prover/mirror-isabelle.git
+      - run: mirror-isabelle/bin/isabelle components -I
+      - run: mirror-isabelle/bin/isabelle components -a
+      - run: mirror-isabelle/bin/isabelle components -u .
+      - run: mirror-isabelle/bin/isabelle lint HOL
