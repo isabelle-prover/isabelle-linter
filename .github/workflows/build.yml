@@ -6,6 +6,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: git clone --depth 1 https://github.com/isabelle-prover/mirror-isabelle.git
+      - uses: actions/cache@v3
+        with:
+          path: ~/.isabelle
+          key: ISABELLE_HOME_USER
       - run: mirror-isabelle/bin/isabelle components -I
       - run: mirror-isabelle/bin/isabelle components -a
       - run: mirror-isabelle/bin/isabelle components -u .
