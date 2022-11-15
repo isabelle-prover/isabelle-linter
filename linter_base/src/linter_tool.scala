@@ -7,8 +7,9 @@ package isabelle.linter
 
 
 import isabelle.Command.Blobs_Info
-import isabelle.Document._
-import isabelle._
+import isabelle.Document.*
+import isabelle.*
+import isabelle.linter.Linter.{Lint_Report, Severity}
 
 import scala.collection.mutable.ListBuffer
 
@@ -67,6 +68,11 @@ object Linter_Tool
     }
   }
 
+  case class Report[A](raw: Lint_Report, reports: List[A]) {
+    def +(other: Report[A]): Report[A] =
+      Report(new Lint_Report(raw.results ++ other.raw.results), reports ++ other.reports)
+  }
+
   def lint_session[A](
     session_name: String,
     selection: Lint_Store.Selection,
@@ -74,12 +80,9 @@ object Linter_Tool
     store: Sessions.Store,
     deps: Sessions.Deps,
     verbose: Boolean,
-    progress: Progress): List[A] =
+    progress: Progress): Report[A] =
   {
     progress.echo("Linting " + session_name)
-
-    val base = deps.get(session_name).getOrElse(error("No base for " + session_name))
-    val theories = base.proper_session_theories.map(_.theory)
 
     using(Export.open_session_context0(store, session_name))(session_context => {
       val result =
@@ -102,15 +105,16 @@ object Linter_Tool
                 None
               case Some(snapshot) =>
                 val start = Date.now()
-                val report = Linter.lint(snapshot, selection)
+                val raw = Linter.lint(snapshot, selection)
                 val end = Date.now()
 
-                val output = presenter.present_for_snapshot(report)
+                val output = presenter.present_for_snapshot(raw)
                 progress.echo_if(verbose, { presenter.to_string(output) })
 
-                Some(presenter.with_info(output, snapshot.node_name, end.time - start.time))
+                val report = presenter.with_info(output, snapshot.node_name, end.time - start.time)
+                Some(Report(raw, List(report)))
             }
-          }
+          }.fold(Report(new Lint_Report(Nil), Nil))(_ + _)
       }
     })
   }
@@ -123,6 +127,7 @@ object Linter_Tool
     selection: Sessions.Selection = Sessions.Selection.empty,
     progress: Progress = new Progress,
     clean_build: Boolean = false,
+    fail_on: Option[Severity.Level] = None,
     dirs: List[Path] = Nil,
     select_dirs: List[Path] = Nil,
     numa_shuffling: Boolean = false,
@@ -151,12 +156,19 @@ object Linter_Tool
     val sessions_structure = full_sessions.selection(selection)
     val deps = Sessions.deps(sessions_structure)
 
-    val reports = sessions_structure.build_selection(selection).map(session_name => Future.fork {
+    val lint_res: Report[A] = sessions_structure.build_selection(selection).map(session_name => Future.fork {
       lint_session(session_name, selection = lint_selection, presenter = presenter, store = store,
         deps = deps, verbose = verbose, progress = progress)
-      }).flatMap(_.join)
+      }).map(_.join).fold(Report(new Lint_Report(Nil), Nil))(_ + _)
 
-    out_file.foreach { file => File.write(file, presenter.mk_string(reports))}
+    out_file.foreach { file => File.write(file, presenter.mk_string(lint_res.reports))}
+    
+    fail_on match {
+      case Some(severity) =>
+        if (lint_res.raw.results.exists(_.severity >= severity))
+          System.exit(1)
+      case None =>
+    }
   }
 
 
@@ -167,6 +179,7 @@ object Linter_Tool
   {
     val build_options = Word.explode(Isabelle_System.getenv("ISABELLE_BUILD_OPTIONS"))
 
+    var fail_on: Option[Severity.Level] = None
     var base_sessions: List[String] = Nil
     var select_dirs: List[Path] = Nil
     var numa_shuffling = false
@@ -189,23 +202,24 @@ object Linter_Tool
 Usage: isabelle lint [OPTIONS] [SESSIONS ...]
 
   Options are:
-  -B NAME      include session NAME and all descendants
-  -D DIR       include session directory and select its sessions
-  -N           cyclic shuffling of NUMA CPU nodes (performance tuning)
-  -O FILE      output file
-  -R           refer to requirements of selected sessions
-  -V           verbose build
-  -X NAME      exclude sessions from group NAME and all descendants
-  -a           select all sessions
-  -c           clean build
-  -d DIR       include session directory
-  -g NAME      select session group NAME
-  -j INT       maximum number of parallel jobs (default 1)
-  -l           list the enabled lints (does not run the linter)
-  -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
-  -r MODE      how to report results (either "text", "json" or "xml", default "text")
-  -v           verbose
-  -x NAME      exclude session NAME and all descendants
+  -B NAME        include session NAME and all descendants
+  -D DIR         include session directory and select its sessions
+  -N             cyclic shuffling of NUMA CPU nodes (performance tuning)
+  -O FILE        output file
+  -R             refer to requirements of selected sessions
+  -V             verbose build
+  -X NAME        exclude sessions from group NAME and all descendants
+  -a             select all sessions
+  -c             clean build
+  -d DIR         include session directory
+  -f SEVERITY    fail on lints with the specified severity
+  -g NAME        select session group NAME
+  -j INT         maximum number of parallel jobs (default 1)
+  -l             list the enabled lints (does not run the linter)
+  -o OPTION      override Isabelle system OPTION (via NAME=VAL or NAME)
+  -r MODE        how to report results (either "text", "json" or "xml", default "text")
+  -v             verbose
+  -x NAME        exclude session NAME and all descendants
 
 Lint isabelle theories.
 """,
@@ -219,6 +233,7 @@ Lint isabelle theories.
       "a" -> (_ => all_sessions = true),
       "c" -> (_ => clean_build = true),
       "d:" -> (arg => dirs = dirs ::: List(Path.explode(arg))),
+      "f:" -> (arg => fail_on = Some(Severity.the_level(arg))),
       "g:" -> (arg => session_groups = session_groups ::: List(arg)),
       "j:" -> (arg => max_jobs = Value.Int.parse(arg)),
       "l" -> (_ => list = true),
@@ -261,6 +276,7 @@ Lint isabelle theories.
           progress = progress,
           clean_build = clean_build,
           dirs = dirs,
+          fail_on = fail_on,
           select_dirs = select_dirs,
           numa_shuffling = numa_shuffling,
           max_jobs = max_jobs,

@@ -157,6 +157,8 @@ object Linter
     val Warn = Value("warn")
     val Error = Value("error")
 
+    def the_level(s: String): Level = unapply(s) getOrElse
+      error("No such severity level: " + quote(s))
     def unapply(s: String): Option[Level] =
       values.find(_.toString == s)
   }
