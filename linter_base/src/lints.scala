@@ -610,8 +610,7 @@ object Counter_Example_Finder_Lint extends AST_Lint
   val severity: Severity.Level = Severity.Error
 
   val description_start: Lint_Description =
-    Lint_Description.empty
-      .add("This lint detects counter-example finders")
+    Lint_Description.empty.add("This lint detects counter-example finders with no specific purpose")
 
   val short_description: Lint_Description =
     description_start.add(".")
@@ -620,8 +619,10 @@ object Counter_Example_Finder_Lint extends AST_Lint
     description_start.add(": ").inline_code("nitpick").add(", ").inline_code("nunchaku")
       .add(", and ").inline_code("quickcheck").add(".")
 
+  val ok_attribs = List("expect", "satisfy")
+
   def no_expect(attributes: List[List[Text.Info[Token]]]): Boolean =
-    !attributes.exists(_.headOption.exists(_.info.content == "expect"))
+    !attributes.exists(_.headOption.exists(text => ok_attribs.contains(text.info.content)))
 
   override def lint_ast_node(elem: Text.Info[AST_Node], report: Reporter): Option[Lint_Result] =
     elem.info match {
