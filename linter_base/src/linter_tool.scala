@@ -84,39 +84,27 @@ object Linter_Tool
   {
     progress.echo("Linting " + session_name)
 
-    using(Export.open_session_context0(store, session_name))(session_context => {
-      val result =
-        for {
-          db <- session_context.session_db()
-          theories = store.read_theories(db, session_name)
-          errors = store.read_errors(db, session_name)
-          info <- store.read_build(db, session_name)
-        } yield (theories, errors, info.return_code)
-      result match {
-        case None => error("Missing build database for session " + quote(session_name))
-        case Some((used_theories, errors, _)) =>
-          if (errors.nonEmpty) error(errors.mkString("\n\n"))
-          used_theories.flatMap { thy =>
-            val thy_heading = "\nTheory " + quote(thy) + ":"
-            progress.echo_if(verbose, "Processing " + thy + " ...")
-            read_theory(session_context.theory(thy)) match {
-              case None =>
-                progress.echo_warning(thy_heading + " missing")
-                None
-              case Some(snapshot) =>
-                val start = Date.now()
-                val raw = Linter.lint(snapshot, selection)
-                val end = Date.now()
+    using(Export.open_session_context0(store, session_name)) { session_context =>
+      session_context.theory_names().flatMap { thy =>
+        val thy_heading = "\nTheory " + quote(thy) + ":"
+        progress.echo_if(verbose, "Processing " + thy + " ...")
+        read_theory(session_context.theory(thy)) match {
+          case None =>
+            progress.echo_warning(thy_heading + " missing")
+            None
+          case Some(snapshot) =>
+            val start = Date.now()
+            val raw = Linter.lint(snapshot, selection)
+            val end = Date.now()
 
-                val output = presenter.present_for_snapshot(raw)
-                progress.echo_if(verbose, { presenter.to_string(output) })
+            val output = presenter.present_for_snapshot(raw)
+            progress.echo_if(verbose, { presenter.to_string(output) })
 
-                val report = presenter.with_info(output, snapshot.node_name, end.time - start.time)
-                Some(Report(raw, List(report)))
-            }
-          }.fold(Report(new Lint_Report(Nil), Nil))(_ + _)
-      }
-    })
+            val report = presenter.with_info(output, snapshot.node_name, end.time - start.time)
+            Some(Report(raw, List(report)))
+        }
+      }.fold(Report(new Lint_Report(Nil), Nil))(_ + _)
+    }
   }
 
   def lint[A](
@@ -156,10 +144,11 @@ object Linter_Tool
     val sessions_structure = full_sessions.selection(selection)
     val deps = Sessions.deps(sessions_structure)
 
-    val lint_res: Report[A] = sessions_structure.build_selection(selection).map(session_name => Future.fork {
-      lint_session(session_name, selection = lint_selection, presenter = presenter, store = store,
-        deps = deps, verbose = verbose, progress = progress)
-      }).map(_.join).fold(Report(new Lint_Report(Nil), Nil))(_ + _)
+    val lint_res: Report[A] = sessions_structure.build_selection(selection).map(session_name =>
+      Future.fork {
+        lint_session(session_name, selection = lint_selection, presenter = presenter, store = store,
+          deps = deps, verbose = verbose, progress = progress)
+        }).map(_.join).fold(Report(new Lint_Report(Nil), Nil))(_ + _)
 
     out_file.foreach { file => File.write(file, presenter.mk_string(lint_res.reports))}
     
