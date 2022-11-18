@@ -646,10 +646,11 @@ object Short_Name extends Parser_Lint
   val long_description: Lint_Description = short_description
 
   override def parser(report: Reporter): Parser[Some[Lint_Result]] =
-    p_command("fun", "definition") ~> elem("ident", _.info.content.length < 2) ^^ {
-      case Text.Info(range, token) =>
-        report(s"""Name "${token.content}" is too short.""", range, None)
-    }
+    p_command("fun", "primrec", "abbreviation", "definition", "inductive", "inductive_set") ~>
+      elem("ident", _.info.content.length < 2) ^^ {
+        case Text.Info(range, token) =>
+          report(s"""Name "${token.content}" is too short.""", range, None)
+      }
 }
 
 object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint
@@ -673,15 +674,36 @@ object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint
     case _ => false
   }
 
-  override def parser(report: Reporter): Parser[Some[Lint_Result]] =
-    p_command("lemma") ~> p_sq_bracketed(p_attributes) >> {
-      _.find(simp_or_cong) match {
-        case None => failure("no match")
-        case Some(tokens) =>
-          success(report("Do not use global attributes on unnamed lemmas.",
-            tokens.head.range, None))
-      }
+  private def p_attr: Parser[(Option[Elem], Option[Elem])] =
+    (p_ident.? ~ p_sq_bracketed(p_attributes).?) ^^ {
+      case name ~ Some(attrs) => name -> attrs.find(simp_or_cong).map(_.head)
+      case name ~ None => name -> None
     }
+
+  private def p_show: Parser[(Option[Elem], Option[Elem])] =
+    p_atom(t => !(t.is_keyword("shows") || t.is_keyword("and"))).* ~>
+      (p_keyword("shows", "and") ~> p_attr | p_keyword("shows", "and")^^(_ => (None, None)))
+
+  override def parser(reporter: Reporter): Parser[Some[Lint_Result]] = {
+    def report(attr: Elem): Parser[Some[Lint_Result]] =
+      success(reporter("Do not use global attributes on unnamed lemmas.", attr.range, None))
+
+    ((p_command("lemma", "theorem", "corollary") ~> p_attr) ~
+      (p_atom(t => !t.is_keyword("shows")).* ~> p_show.*)) >> {
+      case (Some(_), _) ~ _ => failure("no match")
+      case (None, Some(attr)) ~ Nil => report(attr)
+      case (None, Some(attr)) ~ shows =>
+        shows.collectFirst { case (None, _) => attr } match {
+          case Some(attr) => report(attr)
+          case None => failure("no match")
+        }
+      case (None, None) ~ shows =>
+        shows.collectFirst { case (None, Some(attr)) => attr } match {
+          case Some(attr) => report(attr)
+          case None => failure("no match")
+        }
+    }
+  }
 }
 
 object Tactic_Proofs extends AST_Lint
@@ -689,7 +711,7 @@ object Tactic_Proofs extends AST_Lint
   val name: String = "tactic_proofs"
   val severity: Severity.Level = Severity.Error
 
-  private val TACTICS = List("insert", "subgoal_tac", "induct_tac", "rule_tac", "case_tac")
+  private val TACTICS = List("subgoal_tac", "induct_tac", "rule_tac", "case_tac")
 
   val short_description: Lint_Description =
     Lint_Description.empty.add("Using tactics is considered harmful and should be avoided.")
@@ -732,7 +754,7 @@ object Lemma_Transforming_Attribute extends Parser_Lint
   }
 
   override def parser(report: Reporter): Parser[Some[Lint_Result]] =
-    (p_command("lemma") ~ p_ident.?) ~> p_sq_bracketed(p_attributes) >> {
+    (p_command("lemma", "theorem", "corollary") ~ p_ident.?) ~> p_sq_bracketed(p_attributes) >> {
       _.find(simp_or_cong) match {
         case None => failure("no match")
         case Some(tokens) =>

@@ -55,6 +55,8 @@ trait Token_Parsers extends Parsers
 
   def p_keyword(name: String): Parser[Elem] = elem(name, _.info.is_keyword(name))
 
+  def p_keyword(names: String*): Parser[Elem] = anyOf(names.map(p_keyword))
+
   def p_ident: Parser[Elem] = elem("ident", _.info.is_ident)
 
   def p_nat: Parser[Elem] = elem("nat", _.info.is_nat)
