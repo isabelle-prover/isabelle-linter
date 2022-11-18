@@ -28,9 +28,11 @@ object Token_Markup
     tree match {
       case XML.Elem(Markup(COMMENT, _), body) =>
         val content = XML.content(body)
-        if (content.startsWith(Symbol.comment) || content.startsWith(Symbol.cancel)
-        || content.startsWith(Symbol.latex) || content.startsWith(Symbol.marker))
-          mk_token(Kind.FORMAL_COMMENT, body)
+        if (content.startsWith(Symbol.comment) || content.startsWith(Symbol.cancel) ||
+          content.startsWith(Symbol.latex) || content.startsWith(Symbol.marker)) {
+          if (content.startsWith(Symbol.comment)) mk_token(Kind.FORMAL_COMMENT, body)
+          else mk_token(Kind.UNPARSED, body) // TODO fix Pure/General/Comment.content instead
+        }
         else mk_token(Kind.INFORMAL_COMMENT, body)
       case XML.Text(ws) if ws.isBlank => List(Token(Kind.SPACE, ws))
       case XML.Elem(Markup(KEYWORD1, _), body) => mk_token(Kind.COMMAND, body)
