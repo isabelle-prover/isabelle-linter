@@ -1,4 +1,6 @@
 # Isabelle Linter
+![status](https://github.com/isabelle-prover/isabelle-linter/actions/workflows/build.yml/badge.svg)
+
 Linter for Isabelle, with jEdit integration.
 
 ## Setup
