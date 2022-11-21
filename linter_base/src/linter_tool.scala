@@ -84,8 +84,11 @@ object Linter_Tool
   {
     progress.echo("Linting " + session_name)
 
+    val base = deps.get(session_name).getOrElse(error("Deps not found for " + session_name))
+    val thys = base.proper_session_theories.map(_.theory)
+
     using(Export.open_session_context0(store, session_name)) { session_context =>
-      session_context.theory_names().flatMap { thy =>
+      session_context.theory_names().filter(thys.contains).flatMap { thy =>
         val thy_heading = "\nTheory " + quote(thy) + ":"
         progress.echo_if(verbose, "Processing " + thy + " ...")
         read_theory(session_context.theory(thy)) match {
