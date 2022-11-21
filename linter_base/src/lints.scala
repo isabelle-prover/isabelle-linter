@@ -647,7 +647,7 @@ object Short_Name extends Parser_Lint
 
   override def parser(report: Reporter): Parser[Some[Lint_Result]] =
     p_command("fun", "primrec", "abbreviation", "definition", "inductive", "inductive_set") ~>
-      elem("ident", _.info.content.length < 2) ^^ {
+      elem("ident", t => t.info.is_ident && t.info.content.length < 2) ^^ {
         case Text.Info(range, token) =>
           report(s"""Name "${token.content}" is too short.""", range, None)
       }
