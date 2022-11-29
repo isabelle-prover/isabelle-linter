@@ -824,7 +824,7 @@ object Complex_Isar_Initial_Method extends AST_Lint
     for {
       Text.Info(range, s_method) <- method
       if calls_simplifier(s_method) || Complex_Method.is_complex_method(s_method,
-        allow_modifiers = false)
+        allow_modifiers = true)
     } yield report("Keep initial proof methods simple.", range, None).get
 }
 
