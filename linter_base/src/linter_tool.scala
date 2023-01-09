@@ -23,20 +23,15 @@ object Linter_Tool
 
     def read_xml(name: String): XML.Body =
       YXML.parse_body(
-        Symbol.output(unicode_symbols = false, UTF8.decode_permissive(read(name).uncompressed)),
+        Symbol.output(unicode_symbols = false, UTF8.decode_permissive(read(name).bytes)),
         cache = theory_context.cache)
 
     for {
       (thy_file, _) <- theory_context.files(permissive = true)
     }
     yield {
-      val master_dir =
-        Thy_Header.split_file_name(thy_file) match {
-          case Some((dir, _)) => dir
-          case None => error("Cannot determine theory master directory: " + quote(thy_file))
-        }
       val node_name =
-        Document.Node.Name(thy_file, master_dir = master_dir, theory = theory_context.theory)
+        Document.Node.Name(thy_file, theory = theory_context.theory)
 
       val thy_xml = read_xml(Export.MARKUP)
       val command_spans = Token_Markup.from_xml(thy_xml)
@@ -46,7 +41,7 @@ object Linter_Tool
       val (state0, node_edits, commands, _) = command_spans.foldLeft(State.init,
         List.empty[Text.Edit], List.empty[Command], 0) {
           case ((st, ed, cmd, offset), command_span) =>
-            val command = Command(counter(), node_name, Blobs_Info.none, command_span)
+            val command = Command(counter(), node_name, Blobs_Info.empty, command_span)
             (st.define_command(command), ed :+ Text.Edit.insert(offset, command.source),
               cmd :+ command, offset + command.length)
         }

@@ -49,7 +49,7 @@ object JEdit_Extension
 
     val node = path.implode
     val theory = PIDE.resources.theory_name(Sessions.DRAFT, Thy_Header.theory_name(node))
-    val node_name = Document.Node.Name(node, path.dir.implode, theory)
+    val node_name = Document.Node.Name(node, theory)
 
     GUI_Thread.later {
       Document_Model.provide_files(PIDE.session, List(node_name -> File.read(path)))
