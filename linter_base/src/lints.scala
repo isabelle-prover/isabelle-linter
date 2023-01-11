@@ -809,7 +809,8 @@ object Complex_Isar_Initial_Method extends AST_Lint
       .add("methods in proof commands.")
       .references("http://proofcraft.org/blog/isabelle-style.html")
 
-  val SIMPLIFIER_METHOD = List("auto", "simp", "clarsimp", "bestsimp", "slowsimp")
+  val SIMPLIFIER_METHOD =
+    List("simp", "simp_all", "fastforce", "slowsimp", "bestsimp", "force", "auto", "clarsimp")
 
   def calls_simplifier(method: Method): Boolean = method match {
     case Simple_Method(RToken(_, name, _), _, _) => SIMPLIFIER_METHOD.contains(name)
