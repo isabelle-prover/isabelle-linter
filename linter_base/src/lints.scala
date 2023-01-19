@@ -249,10 +249,12 @@ object Low_Level_Apply_Chain extends Proper_Commands_Lint
     Lint_Description.empty
       .add("Long apply-scripts should be avoided.")
 
+  val MIN_LENGTH = 100
+
   val long_description: Lint_Description =
     Lint_Description.empty
       .add("Using long apply-scripts with low-level methods can quickly make proofs unreadable and ")
-      .add("unnecessarily long. This lints flags such scripts that are longer than five commands.")
+      .add("unnecessarily long. This lints flags such scripts that are longer than " + MIN_LENGTH + " commands.")
 
   val LOW_LEVEL_RULES = List(
     "erule",
@@ -285,7 +287,7 @@ object Low_Level_Apply_Chain extends Proper_Commands_Lint
       commands.dropWhile(!is_low_level_apply(_)).span(is_low_level_apply)
 
     val new_report =
-      if (low_level_commands.length >= 5) {
+      if (low_level_commands.length > MIN_LENGTH) {
         add_result(
           "Compress low-level proof methods into automated search.",
           list_range(low_level_commands.map(_.range)),
@@ -594,8 +596,6 @@ object Diagnostic_Command extends Illegal_Command_Lint(
       "thm_oracles",
       "thy_deps",
       "unused_thms",
-      "value",
-      "values",
       "welcome",
       "term",
       "prop",
@@ -617,7 +617,8 @@ object Counter_Example_Finder_Lint extends AST_Lint
 
   override val long_description =
     description_start.add(": ").inline_code("nitpick").add(", ").inline_code("nunchaku")
-      .add(", and ").inline_code("quickcheck").add(".")
+      .add(", and ").inline_code("quickcheck").add(" (without ").inline_code("expect").add(" or ")
+      .inline_code("satisfy").add(".")
 
   val ok_attribs = List("expect", "satisfy")
 
@@ -709,12 +710,14 @@ object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint
 object Tactic_Proofs extends AST_Lint
 {
   val name: String = "tactic_proofs"
-  val severity: Severity.Level = Severity.Error
+  val severity: Severity.Level = Severity.Warn
 
-  private val TACTICS = List("subgoal_tac", "induct_tac", "rule_tac", "case_tac")
+  private val TACTICS = List("induct_tac", "rule_tac", "case_tac")
 
   val short_description: Lint_Description =
-    Lint_Description.empty.add("Using tactics is considered harmful and should be avoided.")
+    Lint_Description.empty.add("When using tactics, avoid outdated ")
+      .inline_code("induct_tac")
+      .add(", and do not refer to system-generated names.")
 
   val long_description: Lint_Description =
     short_description
@@ -734,7 +737,7 @@ object Tactic_Proofs extends AST_Lint
 object Lemma_Transforming_Attribute extends Parser_Lint
 {
   val name: String = "lemma_transforming_attribute"
-  val severity: Severity.Level = Severity.Warn
+  val severity: Severity.Level = Severity.Info
 
   val short_description: Lint_Description =
     Lint_Description.empty
@@ -824,8 +827,7 @@ object Complex_Isar_Initial_Method extends AST_Lint
   ): Option[Lint_Result] =
     for {
       Text.Info(range, s_method) <- method
-      if calls_simplifier(s_method) || Complex_Method.is_complex_method(s_method,
-        allow_modifiers = true)
+      if calls_simplifier(s_method) || Complex_Method.is_complex_method(s_method)
     } yield report("Keep initial proof methods simple.", range, None).get
 }
 
@@ -905,20 +907,16 @@ object Complex_Method extends AST_Lint
       .add("- has three or more combinators (").inline_code("|, ;, ,").add("), for example ")
       .inline_code("auto ; rule , (force | blast)").breakline
 
-  val modifier_length: Int = 1
-  val combinator_threshold: Int = 4
+  val modifier_length: Int = 2
+  val combinator_threshold: Int = 5
   val message: String = "Avoid complex methods."
 
-  private def has_modifiers(method: Method): Boolean = method match {
-    case Simple_Method(_, modifiers, _) => modifiers.nonEmpty
-    case Combined_Method(left, _, right, modifiers) =>
-      modifiers.nonEmpty || has_modifiers(left.info) || has_modifiers(right.info)
-  }
 
   private def has_complex_modifiers(method: Method): Boolean = method match {
     case Simple_Method(_, modifiers, _) => modifiers.length > modifier_length
     case Combined_Method(left, _, right, modifiers) =>
-      modifiers.length > modifier_length || has_modifiers(left.info) || has_modifiers(right.info)
+      modifiers.length > modifier_length || has_complex_modifiers(left.info) ||
+        has_complex_modifiers(right.info)
   }
 
   private def mkList(method: Method): List[Simple_Method] = method match {
@@ -927,11 +925,10 @@ object Complex_Method extends AST_Lint
   }
 
   private def has_many_combinators(method: Method): Boolean =
-    mkList(method).length >= combinator_threshold
+    mkList(method).length > combinator_threshold
 
-  def is_complex_method(method: Method, allow_modifiers: Boolean = true): Boolean =
-    (if (allow_modifiers) has_complex_modifiers(method) else has_modifiers(method)) ||
-      has_many_combinators(method)
+  def is_complex_method(method: Method): Boolean =
+    has_complex_modifiers(method) || has_many_combinators(method)
 
   def is_complex(element: AST_Node): Boolean = element match {
     case Apply(method) => is_complex_method(method.info)
