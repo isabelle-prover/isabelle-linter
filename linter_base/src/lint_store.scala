@@ -224,7 +224,3 @@ print the lints belonging to each bundle.
       lints.toList.flatMap(get_lint).sortBy(_.severity.id)
   }
 }
-
-class Lint_Bundles extends Isabelle_Scala_Tools(Lint_Store.Bundle.isabelle_tool)
-
-class Lint_Descriptions extends Isabelle_Scala_Tools(Lint_Store.isabelle_tool)

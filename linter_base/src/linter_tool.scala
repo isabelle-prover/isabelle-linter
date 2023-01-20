@@ -274,4 +274,5 @@ Lint isabelle theories.
   })
 }
 
-class Linter_Tool extends Isabelle_Scala_Tools(Linter_Tool.isabelle_tool)
+class Linter_Tools extends Isabelle_Scala_Tools(
+  Linter_Tool.isabelle_tool, Lint_Store.isabelle_tool, Lint_Store.Bundle.isabelle_tool)
