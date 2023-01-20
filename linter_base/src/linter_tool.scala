@@ -14,10 +14,8 @@ import isabelle.linter.Linter.{Lint_Report, Severity}
 import scala.collection.mutable.ListBuffer
 
 
-object Linter_Tool
-{
-  def read_theory(theory_context: Export.Theory_Context): Option[Snapshot] =
-  {
+object Linter_Tool {
+  def read_theory(theory_context: Export.Theory_Context): Option[Snapshot] = {
     def read(name: String): Export.Entry =
       theory_context(name, permissive = true)
 
@@ -26,10 +24,7 @@ object Linter_Tool
         Symbol.output(unicode_symbols = false, UTF8.decode_permissive(read(name).uncompressed)),
         cache = theory_context.cache)
 
-    for {
-      (thy_file, _) <- theory_context.files(permissive = true)
-    }
-    yield {
+    for ((thy_file, _) <- theory_context.files(permissive = true)) yield {
       val master_dir =
         Thy_Header.split_file_name(thy_file) match {
           case Some((dir, _)) => dir
@@ -80,8 +75,8 @@ object Linter_Tool
     store: Sessions.Store,
     deps: Sessions.Deps,
     verbose: Boolean,
-    progress: Progress): Report[A] =
-  {
+    progress: Progress
+  ): Report[A] = {
     progress.echo("Linting " + session_name)
 
     val base = deps.get(session_name).getOrElse(error("Deps not found for " + session_name))
@@ -124,8 +119,8 @@ object Linter_Tool
     numa_shuffling: Boolean = false,
     max_jobs: Int = 1,
     verbose_build: Boolean = false,
-    verbose: Boolean = false): Unit =
-  {
+    verbose: Boolean = false
+  ): Unit = {
     val res =
       Build.build(options,
         selection,
@@ -167,8 +162,8 @@ object Linter_Tool
   /* Isabelle tool wrapper */
 
   val isabelle_tool = Isabelle_Tool("lint", "lint theory sources based on PIDE markup",
-    Scala_Project.here, args =>
-  {
+    Scala_Project.here,
+  { args =>
     val build_options = Word.explode(Isabelle_System.getenv("ISABELLE_BUILD_OPTIONS"))
 
     var fail_on: Option[Severity.Level] = None

@@ -12,8 +12,7 @@ import isabelle._
 import scala.annotation.tailrec
 
 
-object Apply_Isar_Switch extends Proper_Commands_Lint
-{
+object Apply_Isar_Switch extends Proper_Commands_Lint {
   val name = "apply_isar_switch"
   val severity: Severity.Level = Severity.Warn
 
@@ -44,8 +43,7 @@ object Apply_Isar_Switch extends Proper_Commands_Lint
     }
 }
 
-object Use_Apply extends AST_Lint
-{
+object Use_Apply extends AST_Lint {
   val name: String = "use_apply"
   val severity: Severity.Level = Severity.Info
   val short_description: Lint_Description =
@@ -79,8 +77,7 @@ object Use_Apply extends AST_Lint
     }
 }
 
-object Use_By extends Proper_Commands_Lint with Token_Parsers
-{
+object Use_By extends Proper_Commands_Lint with Token_Parsers {
   val name: String = "use_by"
   val severity: Severity.Level = Severity.Info
 
@@ -111,8 +108,8 @@ object Use_By extends Proper_Commands_Lint with Token_Parsers
 
   private def gen_replacement(
     apply_script: List[Parsed_Command],
-    has_by: Boolean = false): Option[String] =
-  {
+    has_by: Boolean = false
+  ): Option[String] = {
     apply_script match {
       case apply1 :: apply2 :: _ :: Nil =>
         for {
@@ -135,8 +132,8 @@ object Use_By extends Proper_Commands_Lint with Token_Parsers
   private def report_lint(
     apply_script: List[Parsed_Command],
     report: Lint_Report,
-    has_by: Boolean = false): Lint_Report =
-  {
+    has_by: Boolean = false
+  ): Lint_Report = {
     val new_report = for {
       replacement <- gen_replacement(apply_script, has_by)
     } yield add_result(
@@ -186,8 +183,7 @@ object Use_By extends Proper_Commands_Lint with Token_Parsers
 
 }
 
-object Unrestricted_Auto extends Proper_Commands_Lint
-{
+object Unrestricted_Auto extends Proper_Commands_Lint {
   val name: String = "unrestricted_auto"
   val severity: Severity.Level = Severity.Error
 
@@ -240,8 +236,7 @@ object Unrestricted_Auto extends Proper_Commands_Lint
     }
 }
 
-object Low_Level_Apply_Chain extends Proper_Commands_Lint
-{
+object Low_Level_Apply_Chain extends Proper_Commands_Lint {
   val name: String = "low_level_apply_chain"
   val severity: Severity.Level = Severity.Info
 
@@ -281,8 +276,7 @@ object Low_Level_Apply_Chain extends Proper_Commands_Lint
   }
 
   @tailrec
-  def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
-  {
+  def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report = {
     val (low_level_commands, rest) =
       commands.dropWhile(!is_low_level_apply(_)).span(is_low_level_apply)
 
@@ -302,8 +296,7 @@ object Low_Level_Apply_Chain extends Proper_Commands_Lint
   }
 }
 
-object Global_Attribute_Changes extends Proper_Commands_Lint with Token_Parsers
-{
+object Global_Attribute_Changes extends Proper_Commands_Lint with Token_Parsers {
   val name: String = "global_attribute_changes"
   val severity: Severity.Level = Severity.Info
 
@@ -349,8 +342,8 @@ object Global_Attribute_Changes extends Proper_Commands_Lint with Token_Parsers
 
   private def proces_declaration(command: Parsed_Command)(
     report_simpset: (Lint_Report, Set[String]),
-    declaration: Declaration): (Lint_Report, Set[String]) =
-  {
+    declaration: Declaration): (Lint_Report, Set[String]
+    ) = {
     val (ident, attrs) = declaration
     val (report, simpset) = report_simpset
     val new_report =
@@ -374,8 +367,8 @@ object Global_Attribute_Changes extends Proper_Commands_Lint with Token_Parsers
   private def go(
     commands: List[Parsed_Command],
     report: Lint_Report,
-    simpset: Set[String]): Lint_Report =
-  {
+    simpset: Set[String]
+  ): Lint_Report = {
     commands match {
       case (head@Parsed_Command("declare")) :: next =>
         try_transform(declare_command, head) match {
@@ -394,9 +387,7 @@ object Global_Attribute_Changes extends Proper_Commands_Lint with Token_Parsers
     go(commands, report, Set.empty)
 }
 
-object Use_Isar extends Single_Command_Lint
-{
-
+object Use_Isar extends Single_Command_Lint {
   val name: String = "use_isar"
   val severity: Severity.Level = Severity.Info
 
@@ -416,8 +407,7 @@ object Use_Isar extends Single_Command_Lint
   }
 }
 
-object Axiomatization_With_Where extends Single_Command_Lint
-{
+object Axiomatization_With_Where extends Single_Command_Lint {
   val name: String = "axiomatization_with_where"
   val severity: Severity.Level = Severity.Error
 
@@ -461,17 +451,15 @@ abstract class Illegal_Command_Lint(
   lint_name: String,
   illegal_commands: List[String],
   lint_severity: Severity.Level,
-  lint_description: String)
-  extends Single_Command_Lint
-{
+  lint_description: String
+) extends Single_Command_Lint {
   val name: String = lint_name
   val severity: Severity.Level = lint_severity
 
   val short_description: Lint_Description =
     Lint_Description.empty.add(lint_description)
 
-  val long_description: Lint_Description =
-  {
+  val long_description: Lint_Description = {
     val desc = Lint_Description.empty.addln(lint_description + ": ").inline_code(
       illegal_commands.head)
     illegal_commands.tail.foldLeft(desc) {
@@ -492,8 +480,7 @@ object Unfinished_Proof extends Illegal_Command_Lint(
     Severity.Error,
     "This lint detects unfinished proofs, characterized by the following commands")
 
-object SMT_Oracle extends Parser_Lint
-{
+object SMT_Oracle extends Parser_Lint {
   val name = "smt_oracle"
   val severity = Severity.Error
 
@@ -604,8 +591,7 @@ object Diagnostic_Command extends Illegal_Command_Lint(
     Severity.Info,
     "This lint finds diagnostic commands")
 
-object Counter_Example_Finder_Lint extends AST_Lint
-{
+object Counter_Example_Finder_Lint extends AST_Lint {
   val name: String = "counter_example_finder"
   val severity: Severity.Level = Severity.Error
 
@@ -636,8 +622,7 @@ object Counter_Example_Finder_Lint extends AST_Lint
     }
 }
 
-object Short_Name extends Parser_Lint
-{
+object Short_Name extends Parser_Lint {
   val name: String = "short_name"
   val severity: Severity.Level = Severity.Info
 
@@ -654,8 +639,7 @@ object Short_Name extends Parser_Lint
       }
 }
 
-object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint
-{
+object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint {
   val name: String = "global_attribute_on_unnamed_lemma"
   val severity: Severity.Level = Severity.Error
   val GLOBAL_ATTRIBUTES = List("simp", "cong", "intro", "elim", "dest")
@@ -707,8 +691,7 @@ object Global_Attribute_On_Unnamed_Lemma extends Parser_Lint
   }
 }
 
-object Tactic_Proofs extends AST_Lint
-{
+object Tactic_Proofs extends AST_Lint {
   val name: String = "tactic_proofs"
   val severity: Severity.Level = Severity.Warn
 
@@ -734,8 +717,7 @@ object Tactic_Proofs extends AST_Lint
     }
 }
 
-object Lemma_Transforming_Attribute extends Parser_Lint
-{
+object Lemma_Transforming_Attribute extends Parser_Lint {
   val name: String = "lemma_transforming_attribute"
   val severity: Severity.Level = Severity.Info
 
@@ -766,8 +748,7 @@ object Lemma_Transforming_Attribute extends Parser_Lint
     }
 }
 
-object Implicit_Rule extends AST_Lint
-{
+object Implicit_Rule extends AST_Lint {
   val name: String = "implicit_rule"
   val severity: Severity.Level = Severity.Warn
 
@@ -794,8 +775,7 @@ object Implicit_Rule extends AST_Lint
     }
 }
 
-object Complex_Isar_Initial_Method extends AST_Lint
-{
+object Complex_Isar_Initial_Method extends AST_Lint {
   val name: String = "complex_isar_initial_method"
   val severity: Severity.Level = Severity.Warn
 
@@ -831,8 +811,7 @@ object Complex_Isar_Initial_Method extends AST_Lint
     } yield report("Keep initial proof methods simple.", range, None).get
 }
 
-object Force_Failure extends AST_Lint
-{
+object Force_Failure extends AST_Lint {
   val name: String = "force_failure"
   val severity: Severity.Level = Severity.Info
 
@@ -857,8 +836,7 @@ object Force_Failure extends AST_Lint
     }
 }
 
-object Auto_Structural_Composition extends AST_Lint
-{
+object Auto_Structural_Composition extends AST_Lint {
   val name: String = "auto_structural_composition"
   val severity: Severity.Level = Severity.Info
 
@@ -888,8 +866,7 @@ object Auto_Structural_Composition extends AST_Lint
     }
 }
 
-object Complex_Method extends AST_Lint
-{
+object Complex_Method extends AST_Lint {
   val name: String = "complex_method"
   val severity: Severity.Level = Severity.Warn
 
@@ -942,8 +919,7 @@ object Complex_Method extends AST_Lint
     if (is_complex_method(method.info)) report(message, method.range, None) else None
 }
 
-object Print_AST extends AST_Lint
-{
+object Print_AST extends AST_Lint {
   val name: String = "print_structure"
   val severity: Severity.Level = Severity.Info
 

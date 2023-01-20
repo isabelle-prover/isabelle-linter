@@ -9,8 +9,7 @@ package isabelle.linter
 import isabelle._
 
 
-object Linter_Markup
-{
+object Linter_Markup {
   val LINTER_SENDBACK = "linter_sendback"
   val GOTO_POSITION = "goto_position"
 
@@ -24,8 +23,7 @@ object Linter_Markup
 
   val LINT_SEVERITY = "lint_severity"
 
-  object Lint_Severity
-  {
+  object Lint_Severity {
     def apply(severity: Linter.Severity.Level): Properties.T =
       List((LINT_SEVERITY, severity.toString))
 
@@ -34,7 +32,6 @@ object Linter_Markup
         case Some(p) => Linter.Severity.unapply(p._2)
         case _ => None
       }
-
   }
 
   val THEORY = "theory"
@@ -45,8 +42,7 @@ object Linter_Markup
 
   val LINT_COMMANDS = "lint_commands"
 
-  object Lint_Commands
-  {
+  object Lint_Commands {
     def apply(commands: List[Document_ID.Command]): Properties.T =
       List((LINT_COMMANDS, commands.mkString(",")))
 

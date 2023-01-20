@@ -14,8 +14,7 @@ import isabelle._
 import scala.annotation.tailrec
 
 
-object Token_Markup
-{
+object Token_Markup {
   def map_tokens(tree: XML.Tree): List[Token] = {
 
     def mk_token(kind: Token.Kind.Value, body: XML.Body): List[Token] =
@@ -87,8 +86,7 @@ object Token_Markup
     }
 
     @tailrec
-    def reduce(start: Int, body: XML.Body, res: List[(Command_Span.Span, Int)]): List[Command_Span.Span] =
-    {
+    def reduce(start: Int, body: XML.Body, res: List[(Command_Span.Span, Int)]): List[Command_Span.Span] = {
       def is_ignored(t: XML.Tree): Boolean = t match {
         case XML.Text(ws) if ws.isBlank => true
         case XML.Elem(Markup(Markup.COMMENT, Nil), _) => true

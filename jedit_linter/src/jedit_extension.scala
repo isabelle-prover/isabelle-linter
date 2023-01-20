@@ -17,24 +17,20 @@ import org.gjt.sp.jedit.textarea.TextArea
 
 
 // FIXME this should be code in upstream / unnecessary
-object JEdit_Extension
-{
-  private val handle: VarHandle =
-  {
+object JEdit_Extension {
+  private val handle: VarHandle = {
     val lookup = MethodHandles.privateLookupIn(classOf[Field], MethodHandles.lookup)
     lookup.findVarHandle(classOf[Field], "modifiers", classOf[Int])
   }
 
-  private def remove_final(field: Field) =
-  {
+  private def remove_final(field: Field) = {
     field.setAccessible(true)
     val mods = field.getModifiers & ~Modifier.FINAL
     Handle.set_modifiers(handle, field, mods)
     field
   }
 
-  def init: Unit =
-  {
+  def init: Unit = {
     val ext_elements = Markup.Elements(Linter_Markup.LINTER_SENDBACK, Linter_Markup.GOTO_POSITION)
 
     val active_elements = Rendering.getClass.getDeclaredField("active_elements")
@@ -43,8 +39,7 @@ object JEdit_Extension
     remove_final(background_elements).set(Rendering, Rendering.background_elements ++ ext_elements)
   }
 
-  def load_linter_thy(): Unit =
-  {
+  def load_linter_thy(): Unit = {
     val path = Path.explode("$JEDIT_LINTER_HOME/Linter.thy").canonical
 
     val node = path.implode
@@ -57,9 +52,11 @@ object JEdit_Extension
     }
   }
 
-  def replace_range(snapshot: Document.Snapshot, text_area: TextArea,
-    range: Symbol.Range, text: String): Unit =
-  {
+  def replace_range(
+    snapshot: Document.Snapshot,
+    text_area: TextArea,
+    range: Symbol.Range, text: String
+  ): Unit = {
     val buffer = text_area.getBuffer
     if (!snapshot.is_outdated) {
       JEdit_Lib.buffer_edit(buffer) {
@@ -78,8 +75,7 @@ object JEdit_Extension
 
   class Handler extends Active.Handler {
     override def handle(view: View, text: String, elem: XML.Elem,
-      doc_view: Document_View, snapshot: Document.Snapshot): Boolean =
-    {
+      doc_view: Document_View, snapshot: Document.Snapshot): Boolean = {
       elem match {
         case XML.Elem(Markup(Linter_Markup.LINTER_SENDBACK, props), _) =>
           for {

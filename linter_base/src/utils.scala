@@ -9,8 +9,7 @@ package isabelle.linter
 import isabelle._
 
 
-object Utils
-{
+object Utils {
   def map_accum_l[A, B, C](xs: List[A], acc: B, result: (A, B) => (C, B)): List[C] = xs match {
     case Nil => Nil
     case head :: next =>
@@ -19,8 +18,7 @@ object Utils
       }
   }
 
-  object HTML
-  {
+  object HTML {
     import isabelle.HTML._
 
     val th = new Operator("th")

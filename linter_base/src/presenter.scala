@@ -9,8 +9,7 @@ package isabelle.linter
 import isabelle._
 
 
-trait Presenter[A]
-{
+trait Presenter[A] {
   def to_string(report: A): String
   def mk_string(reports: List[A]): String
 
@@ -20,8 +19,7 @@ trait Presenter[A]
   def with_info(report: A, node: Document.Node.Name, elapsed: Time): A
 }
 
-object JSON_Presenter extends Presenter[JSON.T]
-{
+object JSON_Presenter extends Presenter[JSON.T] {
   private def report_result(lint_result: Linter.Lint_Result): JSON.T = JSON.Object(
     "name" -> lint_result.lint_name,
     "severity" -> lint_result.severity.toString,
@@ -59,13 +57,11 @@ object JSON_Presenter extends Presenter[JSON.T]
       "timing" -> elapsed.ms)
 }
 
-object Text_Presenter extends Presenter[String]
-{
+object Text_Presenter extends Presenter[String] {
   private def report_results(lint_results: List[Linter.Lint_Result]): String =
     lint_results.map(report_result).mkString("\n" + "=" * 30 + "\n")
 
-  private def report_result(lint_result: Linter.Lint_Result): String =
-  {
+  private def report_result(lint_result: Linter.Lint_Result): String = {
     val commands_range = Linter.list_range(lint_result.commands.map(_.range))
     val position = lint_result.line_range.start
     val commands_source =
@@ -91,13 +87,10 @@ object Text_Presenter extends Presenter[String]
       "  " + edit
   }
 
-  private def underline(source: String, range: Text.Range): String =
-  {
-    def underline(line: String, range: Text.Range): (String, Text.Range) =
-    {
+  private def underline(source: String, range: Text.Range): String = {
+    def underline(line: String, range: Text.Range): (String, Text.Range) = {
       val line_range = Text.Range(0, line.length())
-      if (range.is_singularity)
-        (line, range)
+      if (range.is_singularity) (line, range)
       else if (line_range.apart(range)) {
         val new_range = range - line_range.stop - 1
         (line, new_range)
@@ -109,7 +102,6 @@ object Text_Presenter extends Presenter[String]
           line + "\n" + (" " * underlined_range.start) + ("^" * underlined_range.length)
         (underlined, new_range)
       }
-
     }
 
     Utils.map_accum_l(source.split("\n").toList, range, underline).mkString("\n")
@@ -132,13 +124,12 @@ object Text_Presenter extends Presenter[String]
     "Linted " + node + " in " + elapsed + ":\n" + report
 }
 
-object XML_Presenter extends Presenter[XML.Body]
-{
+object XML_Presenter extends Presenter[XML.Body] {
   private def report_lints(
     lint_results: List[Linter.Lint_Result],
     compact: Boolean = true,
-    show_descriptions: Boolean = false): XML.Body =
-  {
+    show_descriptions: Boolean = false
+  ): XML.Body = {
     lint_results.zipWithIndex
       .flatMap {
         ri =>
@@ -154,8 +145,8 @@ object XML_Presenter extends Presenter[XML.Body]
     lint_result: Linter.Lint_Result,
     lint_number: Int = 0,
     compact: Boolean = true,
-    show_descriptions: Boolean = false): XML.Body =
-  {
+    show_descriptions: Boolean = false
+  ): XML.Body = {
     val edit = lint_result.edit match {
       case Some(edit) => text("\n    Consider: ") ::: edit_markup(edit)
       case None => Nil
@@ -186,8 +177,7 @@ object XML_Presenter extends Presenter[XML.Body]
         Position.Range(edit.range) ::: Markup.Content(edit.replacement)),
       text(edit.message)) :: Nil
 
-  def position_markup(lint_result: Linter.Lint_Result): XML.Body =
-  {
+  def position_markup(lint_result: Linter.Lint_Result): XML.Body = {
     val pos = Position.Offset(lint_result.range.start + 1) :::
       Position.End_Offset(lint_result.range.stop) :::
       Position.File(lint_result.commands.head.node_name.node)
@@ -196,8 +186,7 @@ object XML_Presenter extends Presenter[XML.Body]
       text(lint_result.line_range.start.print)) :: text(":\n")
   }
 
-  def add_meta(body: XML.Body, lint_result: Linter.Lint_Result): XML.Body =
-  {
+  def add_meta(body: XML.Body, lint_result: Linter.Lint_Result): XML.Body = {
     XML.Elem(Markup(Linter_Markup.LINT_RESULT,
       Linter_Markup.Lint_Name(lint_result.lint_name)
         ::: Linter_Markup.Lint_Message(lint_result.message)
@@ -218,8 +207,7 @@ object XML_Presenter extends Presenter[XML.Body]
     XML.string_of_tree(XML.Elem(Markup("reports", Nil), reports.flatten))
 
   override def present_for_command(lint_report: Linter.Lint_Report,
-    id: Document_ID.Command): XML.Body =
-  {
+    id: Document_ID.Command): XML.Body = {
     val xml = report_lints(lint_report.command_lints(id))
     if (xml.isEmpty) Nil
     else XML.elem(Markup.KEYWORD1, text("lints:")) :: xml

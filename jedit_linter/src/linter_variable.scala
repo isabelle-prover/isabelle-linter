@@ -11,14 +11,12 @@ import isabelle.jedit.PIDE
 import isabelle.linter._
 
 
-class Linter_Variable
-{
+class Linter_Variable {
   private var lint_cache: Map[Document.Node.Name, (Document.Version, Linter.Lint_Report)] = Map.empty
   private var lint_selection: Lint_Store.Selection = Lint_Store.Selection.empty
   private var _enabled: Boolean = false
 
-  private def update_cache(snapshot: Document.Snapshot): Unit =
-  {
+  private def update_cache(snapshot: Document.Snapshot): Unit = {
     lazy val new_cache =
       lint_cache + (snapshot.node_name -> (snapshot.version, Linter.lint(snapshot, lint_selection)))
     lint_cache get snapshot.node_name match {
@@ -37,8 +35,7 @@ class Linter_Variable
   def do_lint(snapshot: Document.Snapshot): Unit =
     if (_enabled) update_cache(snapshot)
 
-  def lint_report(snapshot: Document.Snapshot): Linter.Lint_Report =
-  {
+  def lint_report(snapshot: Document.Snapshot): Linter.Lint_Report = {
     if (_enabled) {
       lint_cache.get(snapshot.node_name) match {
         case Some((_, report)) => report
@@ -69,14 +66,12 @@ class Linter_Variable
       }
     }
 
-  def install_handlers(): Unit =
-  {
+  def install_handlers(): Unit = {
     PIDE.session.global_options += main
     PIDE.session.commands_changed += main
   }
 
-  def uninstall_handlers(): Unit =
-  {
+  def uninstall_handlers(): Unit = {
     PIDE.session.global_options -= main
     PIDE.session.commands_changed -= main
   }
