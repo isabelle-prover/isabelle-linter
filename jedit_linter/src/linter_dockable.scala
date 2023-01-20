@@ -18,8 +18,7 @@ import java.awt.BorderLayout
 import org.gjt.sp.jedit.View
 
 
-class Linter_Dockable(view: View, position: String) extends Dockable(view, position)
-{
+class Linter_Dockable(view: View, position: String) extends Dockable(view, position) {
   /* text area */
 
   private var current_output: List[XML.Tree] = List(XML.Text("Press lint"))
@@ -41,8 +40,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
   val disabled = XML_Presenter.text("The linter plugin is disabled.")
   val empty = XML_Presenter.text("No lints found.")
 
-  def handle_lint(): Unit =
-  {
+  def handle_lint(): Unit = {
     GUI_Thread.require {}
 
     for {
@@ -70,9 +68,8 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
       if (current_output != new_output) {
         pretty_text_area.update(snapshot, Command.Results.empty, Pretty.separate(new_output))
         current_output = new_output
-      } else {
-        pretty_text_area.refresh()
       }
+      else pretty_text_area.refresh()
     }
   }
 
@@ -89,8 +86,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
 
   private def lint_all: Boolean = PIDE.options.bool("lint_all")
 
-  private def lint_all_=(b: Boolean): Unit =
-  {
+  private def lint_all_=(b: Boolean): Unit = {
     if (lint_all != b) {
       PIDE.options.bool("lint_all") = b
       PIDE.editor.flush_edits(hidden = true)
@@ -108,8 +104,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
 
   private def show_descriptions: Boolean = PIDE.options.bool("lint_descriptions")
 
-  private def show_descriptions_=(b: Boolean): Unit =
-  {
+  private def show_descriptions_=(b: Boolean): Unit = {
     if (show_descriptions != b) {
       PIDE.options.bool("lint_descriptions") = b
       PIDE.editor.flush_edits(hidden = true)
@@ -136,8 +131,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
 
   private def linter: Boolean = PIDE.options.bool("linter_enabled")
 
-  private def linter_=(b: Boolean): Unit =
-  {
+  private def linter_=(b: Boolean): Unit = {
     if (linter != b) {
       PIDE.options.bool("linter_enabled") = b
       Linter_Plugin.instance.foreach { plugin =>
@@ -182,8 +176,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
       case _ =>
     }
 
-  override def init(): Unit =
-  {
+  override def init(): Unit = {
     PIDE.session.global_options += main
     PIDE.session.commands_changed += main
     PIDE.session.caret_focus += main
@@ -191,8 +184,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
     auto_lint()
   }
 
-  override def exit(): Unit =
-  {
+  override def exit(): Unit = {
     PIDE.session.caret_focus -= main
     PIDE.session.global_options -= main
     PIDE.session.commands_changed -= main

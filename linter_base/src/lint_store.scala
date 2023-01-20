@@ -10,8 +10,7 @@ import Linter._
 import isabelle._
 
 
-object Lint_Store
-{
+object Lint_Store {
   private var store: Map[String, Lint] = Map.empty
 
   def register_lint(lint: Lint): Unit = { store += ((lint.name, lint)) }
@@ -46,8 +45,7 @@ object Lint_Store
 
   def lints: List[Lint] = store.values.toList
 
-  def print_lints(progress: Progress = new Progress): Unit =
-  {
+  def print_lints(progress: Progress = new Progress): Unit = {
     val header = Utils.HTML.table_header(
       List("Name", "Severity", "Short description", "Description", "Bundles").map(HTML.text))
     val rows = Lint_Store.lints.map { lint =>
@@ -82,14 +80,12 @@ Print lint descriptions.
 
   /* Bundles */
 
-  case class Bundle(name: String, lint_names: Set[String])
-  {
+  case class Bundle(name: String, lint_names: Set[String]) {
     def contains(lint_name : String): Boolean =
       lint_names.contains(lint_name)
   }
 
-  object Bundle
-  {
+  object Bundle {
     val afp_mandatory = Bundle("afp_mandatory", Set(
       Unfinished_Proof.name,
       Bad_Style_Command.name,
@@ -146,16 +142,14 @@ Print lint descriptions.
 
     def bundles: List[Bundle] = store.values.toList
 
-    def get_bundles_for_lint(lint_name: String): List[String] =
-    {
+    def get_bundles_for_lint(lint_name: String): List[String] = {
       for {
         bundle <- bundles
         if bundle.contains(lint_name)
       } yield bundle.name
     }
 
-    def print_bundles(progress: Progress = new Progress): Unit =
-    {
+    def print_bundles(progress: Progress = new Progress): Unit = {
       val header = Utils.HTML.table_header(
         List(HTML.text("Bundle Name"), HTML.text("Lints")))
       val rows = bundles.toList.map { bundle =>
@@ -171,8 +165,8 @@ Print lint descriptions.
     /* Isabelle tool wrapper */
 
     val isabelle_tool = Isabelle_Tool("lint_bundles", "print the lints belonging to each bundle.",
-      Scala_Project.here, args =>
-    {
+      Scala_Project.here,
+    { args =>
       val getopts = Getopts("""
 Usage: isabelle lint_bundles
 
@@ -190,10 +184,8 @@ print the lints belonging to each bundle.
 
   /* Configurations */
 
-  object Selection
-  {
-    def apply(options: Options): Selection =
-    {
+  object Selection {
+    def apply(options: Options): Selection = {
       val bundles = space_explode(',', options.string("lint_bundles"))
       val enabled_lints = space_explode(',', options.string("lints_enabled"))
       val disabled_lints = space_explode(',', options.string("lints_disabled"))
@@ -209,8 +201,7 @@ print the lints belonging to each bundle.
     def empty: Selection = new Selection(Set.empty)
   }
 
-  class Selection(private val lints: Set[String])
-  {
+  class Selection(private val lints: Set[String]) {
     def enable_lint(lint_name: String): Selection = Selection(lints + lint_name)
 
     def enable_lints(lint_names: List[String]): Selection =

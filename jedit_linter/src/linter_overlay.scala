@@ -10,8 +10,7 @@ import isabelle.jedit._
 import isabelle.linter._
 
 
-object Linter_Overlay
-{
+object Linter_Overlay {
   type State = Map[Command, List[String]]
 
   private val overlay_fn = "print_xml"
@@ -22,13 +21,11 @@ object Linter_Overlay
   private def remove_overlay(command: Command, args: List[String]) =
     PIDE.editor.remove_overlay(command, overlay_fn, args)
 
-  object State
-  {
+  object State {
     def empty: State = Map.empty
   }
 
-  class Variable
-  {
+  class Variable {
     private var current: State = State.empty
 
     def clear(): Unit = this.synchronized {
@@ -51,8 +48,7 @@ object Linter_Overlay
     }
   }
 
-  object Presenter extends linter.Presenter[Linter_Overlay.State]
-  {
+  object Presenter extends linter.Presenter[Linter_Overlay.State] {
     override def to_string(report: State): String = report.toString()
 
     override def mk_string(reports: List[State]): String = reports.mkString(", ")
@@ -61,8 +57,9 @@ object Linter_Overlay
       id: Document_ID.Command): Linter_Overlay.State =
       present_for_snapshot(lint_report).find(_._1.id == id).map(Map(_)).getOrElse(Map.empty)
 
-    override def present_for_snapshot(lint_report: Linter.Lint_Report, show_desriptions: Boolean = false): Linter_Overlay.State =
-    {
+    override def present_for_snapshot(lint_report: Linter.Lint_Report,
+      show_desriptions: Boolean = false): Linter_Overlay.State = {
+
       val commands = lint_report.results
         .flatMap(result => result.commands.map(_ -> result))
         .groupBy(_._1)

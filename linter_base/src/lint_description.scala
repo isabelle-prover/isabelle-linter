@@ -18,16 +18,12 @@ case class Empty_Line() extends Description_Element
 case class Code_Block(strs: Seq[String]) extends Description_Element
 case class Reference(url: String) extends Description_Element
 
-case class Lint_Description(rev_els: List[Description_Element])
-{
+case class Lint_Description(rev_els: List[Description_Element]) {
   def code_block(strs: String*): Lint_Description = add(Code_Block(strs))
-
   def inline_code(str: String): Lint_Description = add(Inline_Code(str))
 
   def add(e: Description_Element): Lint_Description = Lint_Description(e :: rev_els)
-
   def add(str: String): Lint_Description = add(Plain(str))
-
   def addln(str: String): Lint_Description = add(Plain(str)).breakline
 
   def breakline: Lint_Description = add(Line_Break())
@@ -37,23 +33,20 @@ case class Lint_Description(rev_els: List[Description_Element])
   def empty_line: Lint_Description = add(Empty_Line())
 }
 
-object Lint_Description
-{
+object Lint_Description {
   val empty: Lint_Description = Lint_Description(Nil)
 
 
   /* textual rendering */
 
-  trait Presentation
-  {
+  trait Presentation {
     def render(e: Description_Element): XML.Body
 
     def render(description: Lint_Description): XML.Body =
       description.rev_els.reverse.flatMap(render)
   }
 
-  object Markdown_Presentation extends Presentation
-  {
+  object Markdown_Presentation extends Presentation {
     override def render(e: Description_Element): XML.Body = e match {
       case Inline_Code(str) => List(HTML.code(HTML.text(str)))
       case Plain(str) => HTML.text(str)
@@ -64,8 +57,7 @@ object Lint_Description
     }
   }
 
-  object XML_Presentation extends Presentation
-  {
+  object XML_Presentation extends Presentation {
     def render_string(e: Description_Element): String =
       e match {
         case Inline_Code(str) => Library.quote(str)

@@ -13,22 +13,16 @@ import isabelle._
 import Linter._
 
 
-object Token_Parsers extends Token_Parsers
-{
-  case class Token_Reader(in: List[Text.Info[Token]]) extends input.Reader[Text.Info[Token]]
-  {
+object Token_Parsers extends Token_Parsers {
+  case class Token_Reader(in: List[Text.Info[Token]]) extends input.Reader[Text.Info[Token]] {
     def first: Text.Info[Token] = in.head
-
     def rest: Token_Reader = Token_Reader(in.tail)
-
     def pos: input.Position = input.NoPosition
-
     def atEnd: Boolean = in.isEmpty
   }
 }
 
-trait Token_Parsers extends Parsers
-{
+trait Token_Parsers extends Parsers {
   type Elem = Text.Info[Token]
 
   def anyOf[T](ps: => Seq[Parser[T]]): Parser[T] = ps.reduce(_ | _)
@@ -41,20 +35,17 @@ trait Token_Parsers extends Parsers
     token.is_float ||
     token.is_keyword ||
     token.kind == Token.Kind.CARTOUCHE
-
   def is_atom(rtoken: Text.Info[Token]): Boolean = is_atom(rtoken.info)
 
 
   /* Token kinds */
 
   def p_command(name: String): Parser[Elem] = elem(name, _.info.is_command(name))
-
   def p_command(names: String*): Parser[Elem] = anyOf(names.map(p_command))
 
   def p_space: Parser[Elem] = elem("space", _.info.is_space)
 
   def p_keyword(name: String): Parser[Elem] = elem(name, _.info.is_keyword(name))
-
   def p_keyword(names: String*): Parser[Elem] = anyOf(names.map(p_keyword))
 
   def p_ident: Parser[Elem] = elem("ident", _.info.is_ident)
@@ -69,8 +60,8 @@ trait Token_Parsers extends Parsers
 
   def p_surrounded_extend[T, U](
     left: Parser[Text.Info[T]],
-    right: Parser[Text.Info[T]])(center: Parser[Text.Info[U]]): Parser[Text.Info[U]] =
-  {
+    right: Parser[Text.Info[T]]
+  )(center: Parser[Text.Info[U]]): Parser[Text.Info[U]] = {
     left ~ center ~ right ^^ {
       case Text.Info(lr, _) ~ Text.Info(_, c) ~ Text.Info(rr, _) =>
         Text.Info(Text.Range(lr.start, rr.stop), c)
@@ -115,8 +106,7 @@ trait Token_Parsers extends Parsers
 
   def p_arg(pred: Token => Boolean): Parser[List[Elem]] = p_single_arg(pred) | p_args(pred)
 
-  object Method_Parsers
-  {
+  object Method_Parsers {
     def p_method(isOuter: Boolean = true): Parser[Text.Info[Method]] = {
       val nameParser = if (isOuter) p_name_only else p_name_args
       (nameParser | p_parened_extend(p_methods)) ~ p_modifier.? ^^ {
@@ -147,8 +137,7 @@ trait Token_Parsers extends Parsers
     def p_combinator(
       sep: String,
       combinator: Method.Combinator,
-      nextPrecedence: Parser[Text.Info[Method]]): Parser[Text.Info[Method]] =
-    {
+      nextPrecedence: Parser[Text.Info[Method]]): Parser[Text.Info[Method]] = {
       chainl1[Text.Info[Method]](nextPrecedence, p_keyword(sep) ^^^ {
         (left, right) => Text.Info(
           Text.Range(left.range.start, right.range.stop),
@@ -175,8 +164,7 @@ trait Token_Parsers extends Parsers
     }
 
     def add_modifier(method: Text.Info[Method],
-      modifier: Option[Text.Info[Method.Modifier]]): Text.Info[Method] =
-    {
+      modifier: Option[Text.Info[Method.Modifier]]): Text.Info[Method] = {
       modifier match {
         case None => method
         case Some(mod@Text.Info(mod_range, _)) =>
@@ -226,8 +214,7 @@ trait Token_Parsers extends Parsers
         By(method1, method2))
   }
 
-  def p_counter_example_command: Parser[Text.Info[AST_Node]] =
-  {
+  def p_counter_example_command: Parser[Text.Info[AST_Node]] = {
     p_command("nunchaku", "nitpick", "quickcheck") ~ (p_sq_bracketed(p_attributes) | success(Nil))  ^^ {
       case commandName ~ attributes =>
         val attr_stop = attributes.lastOption.flatMap(_.lastOption).map(_.range.stop).getOrElse(commandName.range.stop)
@@ -257,8 +244,7 @@ trait Token_Parsers extends Parsers
 
   def mk_string(tokens: List[Elem]): String = tokens.map(_.info.source).mkString
 
-  def parse[T](p: Parser[T], in: List[Elem], keepSpaces: Boolean = false): ParseResult[T] =
-  {
+  def parse[T](p: Parser[T], in: List[Elem], keepSpaces: Boolean = false): ParseResult[T] = {
     val processed = if (keepSpaces) in else in.filterNot(_.info.is_space)
     p(Token_Parsers.Token_Reader(processed))
   }
