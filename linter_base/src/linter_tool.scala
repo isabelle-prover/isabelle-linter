@@ -91,11 +91,13 @@ object Linter_Tool {
             val raw = Linter.lint(snapshot, selection)
             val end = Date.now()
 
-            val output = presenter.present_for_snapshot(raw)
-            if (raw.results.nonEmpty) progress.echo_if(console, "Lints in " + thy + ":")
-            progress.echo_if(console, { presenter.to_string(output) })
+            val report =
+              presenter.with_info(presenter.present_for_snapshot(raw),
+                snapshot.node_name, end.time - start.time)
 
-            val report = presenter.with_info(output, snapshot.node_name, end.time - start.time)
+            if (console && (verbose || raw.results.nonEmpty))
+              progress.echo(presenter.to_string(report))
+
             Some(Report(raw, List(report)))
         }
       }.fold(Report(new Lint_Report(Nil), Nil))(_ + _)
@@ -236,7 +238,8 @@ Lint isabelle theories.
     if (list) progress.echo(commas(configuration.get_lints.map(_.name).sorted))
     else {
       val presenter = mode match {
-        case "text" => Text_Presenter
+        case "text" => Text_Presenter(do_underline = true)
+        case "afp" => Text_Presenter(do_underline = false)
         case "json" => JSON_Presenter
         case "xml" => XML_Presenter
         case _ => error(s"Unrecognized reporting mode $mode")

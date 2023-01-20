@@ -6,7 +6,8 @@ Lint report presentation in different formats.
 package isabelle.linter
 
 
-import isabelle._
+import isabelle.*
+import isabelle.linter.Linter.Severity
 
 
 trait Presenter[A] {
@@ -57,7 +58,7 @@ object JSON_Presenter extends Presenter[JSON.T] {
       "timing" -> elapsed.ms)
 }
 
-object Text_Presenter extends Presenter[String] {
+case class Text_Presenter(do_underline: Boolean) extends Presenter[String] {
   private def report_results(lint_results: List[Linter.Lint_Result]): String =
     lint_results.map(report_result).mkString("\n" + "=" * 30 + "\n")
 
@@ -77,14 +78,18 @@ object Text_Presenter extends Presenter[String] {
 
     val edit = lint_result.edit match {
       case None => ""
-      case Some(edit) => s"Suggestion: ${edit.message}"
+      case Some(edit) => s"\n\n  Suggestion: ${edit.message}\n"
     }
+    def print_severity(severity: Severity.Level): String =
+      severity match {
+        case Severity.Warn => "Warning"
+        case Severity.Error => "Error"
+      }
 
-    "At " + position.print + ":                [" + lint_result.lint_name + "}]\n  " +
-      lint_result.message + "\n" +
-      "  Severity: " + lint_result.severity + "\n\n" +
-      snippet + "\n\n" +
-      "  " + edit
+    print_severity(lint_result.severity) + " at " + position.print + ":    [" +
+      lint_result.lint_name + "]\n" +
+      lint_result.message + "\n\n" +
+      snippet + edit + "\n"
   }
 
   private def underline(source: String, range: Text.Range): String = {
@@ -98,17 +103,17 @@ object Text_Presenter extends Presenter[String] {
       else {
         val underlined_range = range.restrict(line_range)
         val new_range = Text.Range(0, 0 max (range.stop - line_range.length - 1))
-        val underlined =
-          line + "\n" + (" " * underlined_range.start) + ("^" * underlined_range.length)
-        (underlined, new_range)
+        val result =
+          if (!do_underline) line
+          else line + "\n" + (" " * underlined_range.start) + ("^" * underlined_range.length)
+        (result, new_range)
       }
     }
 
     Utils.map_accum_l(source.split("\n").toList, range, underline).mkString("\n")
   }
 
-  override def to_string(report: String): String =
-    if (report.isEmpty) "No lints found." else report
+  override def to_string(report: String): String = if (report.isEmpty) "" else report
 
   override def mk_string(reports: List[String]): String = reports.mkString("\n")
 
@@ -121,7 +126,7 @@ object Text_Presenter extends Presenter[String] {
     report_results(lint_report.results)
 
   override def with_info(report: String, node: Document.Node.Name, elapsed: Time): String =
-    "Linted " + node + " in " + elapsed + ":\n" + report
+    "Linted " + node + " in " + elapsed.message + ":\n\n" + Library.indent_lines(2, report) + "\n"
 }
 
 object XML_Presenter extends Presenter[XML.Body] {
