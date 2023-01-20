@@ -15,6 +15,4 @@ sources = \
   src/token_markup.scala \
   src/utils.scala
 services = \
-  isabelle.linter.Linter_Tool \
-  isabelle.linter.Lint_Descriptions \
-  isabelle.linter.Lint_Bundles
+  isabelle.linter.Linter_Tools
