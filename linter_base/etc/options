@@ -3,8 +3,11 @@ section "Linter"
 public option lint_bundles : string = "default"
   -- "enabled lint bundles"
 
-public option lints_enabled : string = ""
-  -- "extra enabled lints"
+public option lints_warning : string = ""
+  -- "extra enabled lints (warning severity)"
+
+public option lints_error : string = ""
+  -- "extra enabled lints (error severity)"
 
 public option lints_disabled : string = ""
   -- "disabled lints"

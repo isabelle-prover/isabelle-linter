@@ -6,7 +6,8 @@ Isabelle linter.
 package isabelle.linter
 
 
-import isabelle._
+import isabelle.*
+import isabelle.Browser_Info.Config
 
 
 object Linter {
@@ -142,7 +143,6 @@ object Linter {
 
   object Severity extends Enumeration {
     type Level = Value
-    val Info = Value("info")
     val Warn = Value("warn")
     val Error = Value("error")
 
@@ -161,7 +161,7 @@ object Linter {
     def lint(commands: List[Parsed_Command], report: Lint_Report): Lint_Report
   }
 
-  abstract class Proper_Commands_Lint extends Lint {
+  abstract class Proper_Commands_Lint(val name: String, val severity: Severity.Level) extends Lint {
     def lint(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
       lint_proper(commands.filter(_.command.is_proper), report)
 
@@ -184,7 +184,7 @@ object Linter {
       Lint_Result(name, message, range, edit, severity, commands, short_description))
   }
 
-  abstract class Single_Command_Lint extends Lint {
+  abstract class Single_Command_Lint(val name: String, val severity: Severity.Level) extends Lint {
     def lint(commands: List[Parsed_Command], report: Lint_Report): Lint_Report = commands
       .flatMap(command => lint(command, Reporter(command, name, severity, short_description)))
       .foldLeft(report)((report, result) => report.add_result(result))
@@ -192,7 +192,9 @@ object Linter {
     def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result]
   }
 
-  abstract class Parser_Lint extends Single_Command_Lint with Token_Parsers {
+  abstract class Parser_Lint(override val name: String, override val severity: Severity.Level)
+    extends Single_Command_Lint(name, severity) with Token_Parsers {
+
     def parser(report: Reporter): Parser[Some[Lint_Result]]
 
     def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] =
@@ -202,7 +204,9 @@ object Linter {
       }
   }
 
-  abstract class AST_Lint extends Single_Command_Lint {
+  abstract class AST_Lint(override val name: String, override val severity: Severity.Level)
+    extends Single_Command_Lint(name, severity) {
+
     def lint_method(method: Text.Info[Method], report: Reporter): Option[Lint_Result] = None
 
     def lint_by(
@@ -237,5 +241,13 @@ object Linter {
 
     def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] =
       lint_ast_node(command.ast_node, report)
+  }
+
+  case class Lint_Wrapper(name: String, apply: (String, Lint_Wrapper.Config) => Lint) {
+    def get(config: Lint_Wrapper.Config): Lint = apply(name, config)
+  }
+  object Lint_Wrapper {
+    type Config = Severity.Level
+    val default_config: Config = Severity.Warn
   }
 }
