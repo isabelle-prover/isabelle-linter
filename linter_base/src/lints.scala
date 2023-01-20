@@ -724,7 +724,7 @@ object Lints {
   ) extends AST_Lint(name, severity) with Complex_Methods
 
   val complex_isar_initial_method = Lint_Wrapper("complex_isar_initial_method",
-    (name, severity) => new Complex_Methods_Lint(name, severity, 3, 1) {
+    (name, severity) => new Complex_Methods_Lint(name, severity, 1, 3) {
 
     val short_description: Lint_Description =
       Lint_Description.empty
@@ -813,7 +813,7 @@ object Lints {
 
 
   val complex_method = Lint_Wrapper("complex_method",
-    (name, severity) => new Complex_Methods_Lint(name, severity, 4, 2) {
+    (name, severity) => new Complex_Methods_Lint(name, severity, 2, 4) {
 
     val short_description: Lint_Description =
       Lint_Description.empty.add("Using complex methods (e.g. too much nesting) should be avoided.")
