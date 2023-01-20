@@ -70,6 +70,7 @@ object Linter_Tool {
     store: Sessions.Store,
     deps: Sessions.Deps,
     verbose: Boolean,
+    console: Boolean,
     progress: Progress
   ): Report[A] = {
     progress.echo("Linting " + session_name)
@@ -80,7 +81,7 @@ object Linter_Tool {
     using(Export.open_session_context0(store, session_name)) { session_context =>
       session_context.theory_names().filter(thys.contains).flatMap { thy =>
         val thy_heading = "\nTheory " + quote(thy) + ":"
-        progress.echo_if(verbose, "Processing " + thy + " ...")
+        progress.echo_if(verbose, "Processing " + thy + "...")
         read_theory(session_context.theory(thy)) match {
           case None =>
             progress.echo_warning(thy_heading + " missing")
@@ -91,7 +92,8 @@ object Linter_Tool {
             val end = Date.now()
 
             val output = presenter.present_for_snapshot(raw)
-            progress.echo_if(verbose, { presenter.to_string(output) })
+            if (raw.results.nonEmpty) progress.echo_if(console, "Lints in " + thy + ":")
+            progress.echo_if(console, { presenter.to_string(output) })
 
             val report = presenter.with_info(output, snapshot.node_name, end.time - start.time)
             Some(Report(raw, List(report)))
@@ -113,6 +115,7 @@ object Linter_Tool {
     select_dirs: List[Path] = Nil,
     numa_shuffling: Boolean = false,
     max_jobs: Int = 1,
+    console: Boolean = true,
     verbose_build: Boolean = false,
     verbose: Boolean = false
   ): Unit = {
@@ -140,7 +143,7 @@ object Linter_Tool {
     val lint_res: Report[A] = sessions_structure.build_selection(selection).map(session_name =>
       Future.fork {
         lint_session(session_name, selection = lint_selection, presenter = presenter, store = store,
-          deps = deps, verbose = verbose, progress = progress)
+          deps = deps, console = console, verbose = verbose, progress = progress)
         }).map(_.join).fold(Report(new Lint_Report(Nil), Nil))(_ + _)
 
     out_file.foreach { file => File.write(file, presenter.mk_string(lint_res.reports))}
@@ -187,7 +190,7 @@ Usage: isabelle lint [OPTIONS] [SESSIONS ...]
   -B NAME        include session NAME and all descendants
   -D DIR         include session directory and select its sessions
   -N             cyclic shuffling of NUMA CPU nodes (performance tuning)
-  -O FILE        output file
+  -O FILE        write output to file instead of stdout
   -R             refer to requirements of selected sessions
   -V             verbose build
   -X NAME        exclude sessions from group NAME and all descendants
@@ -223,8 +226,6 @@ Lint isabelle theories.
       "r:" -> (arg => mode = arg),
       "v" -> (_ => verbose = true),
       "x:" -> (arg => exclude_sessions = exclude_sessions ::: List(arg)))
-
-    if (!verbose && output_file.isEmpty) { verbose = true }
 
     val sessions = getopts(args)
 
@@ -262,6 +263,7 @@ Lint isabelle theories.
           select_dirs = select_dirs,
           numa_shuffling = numa_shuffling,
           max_jobs = max_jobs,
+          console = output_file.isEmpty,
           verbose_build = verbose_build,
           verbose = verbose)
       }
