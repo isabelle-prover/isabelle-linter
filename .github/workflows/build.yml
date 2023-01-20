@@ -3,6 +3,7 @@ on: [push, repository_dispatch]
 jobs:
   compile:
     runs-on: ubuntu-latest
+    only: master
     steps:
       - uses: actions/checkout@v3
       - run: git clone --depth 1 https://github.com/isabelle-prover/mirror-isabelle.git
