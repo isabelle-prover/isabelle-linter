@@ -243,6 +243,7 @@ Lint isabelle theories.
         case "afp" => Text_Presenter(do_underline = false)
         case "json" => JSON_Presenter
         case "xml" => XML_Presenter
+        case "count" => Count
         case _ => error(s"Unrecognized reporting mode $mode")
       }
 
