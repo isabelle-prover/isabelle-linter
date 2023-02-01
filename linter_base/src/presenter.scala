@@ -7,6 +7,7 @@ package isabelle.linter
 
 
 import isabelle.*
+import isabelle.Document.Node
 import isabelle.linter.Linter.Severity
 
 
@@ -228,4 +229,15 @@ object XML_Presenter extends Presenter[XML.Body] {
   override def with_info(report: XML.Body, node: Document.Node.Name, elapsed: Time): XML.Body =
     List(XML.Elem(Markup("report",
       Linter_Markup.Theory(node.toString) ::: Linter_Markup.Timing(elapsed.ms)), report))
+}
+
+object Count extends Presenter[List[Any]] {
+  override def to_string(report: List[Any]): String = report.mkString(",")
+  override def mk_string(reports: List[List[Any]]): String = to_string(reports.flatten)
+  override def present_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): List[Any] =
+    List(lint_report.results.length)
+  override def present_for_snapshot(lint_report: Linter.Lint_Report, show_descriptions: Boolean): List[Any] =
+    List(lint_report.results.length)
+  override def with_info(report: List[Any], node: Node.Name, elapsed: Time): List[Any] =
+    node.theory :: report
 }
