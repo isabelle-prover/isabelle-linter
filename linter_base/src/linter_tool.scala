@@ -120,7 +120,7 @@ object Linter_Tool {
     console: Boolean = true,
     verbose_build: Boolean = false,
     verbose: Boolean = false
-  ): Unit = {
+  ): Report[A] = {
     val res =
       Build.build(options,
         selection,
@@ -156,6 +156,7 @@ object Linter_Tool {
           System.exit(1)
       case None =>
     }
+    lint_res
   }
 
 
