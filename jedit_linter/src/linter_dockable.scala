@@ -53,8 +53,9 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
             PIDE.editor.current_command(view, snapshot).getOrElse(Command.empty)
 
           val report = linter.lint_report(snapshot)
-          val snapshot_lints = XML_Presenter.present_for_snapshot(report, show_descriptions)
-          val command_lints = XML_Presenter.present_for_command(report, current_command.id)
+          val snapshot_lints = XML_Presenter.present(report, show_descriptions = show_descriptions)
+          val command_lints = XML_Presenter.present(
+            report.command_lints(current_command.id), show_descriptions = true)
 
           val all_lints =
             if (lint_all && snapshot_lints.nonEmpty) separator ::: snapshot_lints

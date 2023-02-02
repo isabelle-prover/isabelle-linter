@@ -1,4 +1,4 @@
-/* Author: Yecine Megdiche, TU Muenchen
+/* Author: Yecine Megdiche and Fabian Huch, TU Muenchen
 
 Lint report presentation in different formats.
  */
@@ -15,10 +15,11 @@ trait Presenter[A] {
   def to_string(report: A): String
   def mk_string(reports: List[A]): String
 
-  def present_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): A
-  def present_for_snapshot(lint_report: Linter.Lint_Report, show_descriptions: Boolean = false): A
-
-  def with_info(report: A, node: Document.Node.Name, elapsed: Time): A
+  def present(
+    lint_report: Linter.Lint_Report,
+    header: Boolean = false,
+    show_descriptions: Boolean = false,
+  ): A
 }
 
 object JSON_Presenter extends Presenter[JSON.T] {
@@ -45,18 +46,14 @@ object JSON_Presenter extends Presenter[JSON.T] {
   override def mk_string(reports: List[JSON.T]): String =
     JSON.Format.apply(JSON.Object("reports" -> reports))
 
-  override def present_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): JSON.T =
-    JSON.Object("results" -> lint_report.command_lints(id))
-
-  override def present_for_snapshot(lint_report: Linter.Lint_Report,
-    show_descriptions: Boolean = false): JSON.T =
-    JSON.Object("results" -> lint_report.results.map(report_result))
-
-  override def with_info(report: JSON.T, node: Document.Node.Name, elapsed: Time): JSON.T =
+  override def present(
+    lint_report: Linter.Lint_Report,
+    header: Boolean = false,
+    show_descriptions: Boolean = false
+  ): JSON.T =
     JSON.Object(
-      "theory" -> node.toString,
-      "report" -> report,
-      "timing" -> elapsed.ms)
+      "theory" -> lint_report.name.toString,
+      "results" -> lint_report.results.map(report_result))
 }
 
 case class Text_Presenter(do_underline: Boolean) extends Presenter[String] {
@@ -118,16 +115,16 @@ case class Text_Presenter(do_underline: Boolean) extends Presenter[String] {
 
   override def mk_string(reports: List[String]): String = reports.mkString("\n")
 
-  override def present_for_command(lint_report: Linter.Lint_Report,
-    id: Document_ID.Command): String =
-    report_results(lint_report.command_lints(id))
-
-  override def present_for_snapshot(lint_report: Linter.Lint_Report,
-    show_descriptions: Boolean = false): String =
-    report_results(lint_report.results)
-
-  override def with_info(report: String, node: Document.Node.Name, elapsed: Time): String =
-    "Linted " + node + " in " + elapsed.message + ":\n\n" + Library.indent_lines(2, report) + "\n"
+  override def present(
+    lint_report: Linter.Lint_Report,
+    header: Boolean = false,
+    show_descriptions: Boolean = false
+  ): String = {
+    val report = report_results(lint_report.results)
+    if (header && lint_report.results.nonEmpty)
+      "Linted " + lint_report.name + ":\n\n" + Library.indent_lines(2, report) + "\n"
+    else report
+  }
 }
 
 object XML_Presenter extends Presenter[XML.Body] {
@@ -212,32 +209,30 @@ object XML_Presenter extends Presenter[XML.Body] {
   override def mk_string(reports: List[XML.Body]): String =
     XML.string_of_tree(XML.Elem(Markup("reports", Nil), reports.flatten))
 
-  override def present_for_command(lint_report: Linter.Lint_Report,
-    id: Document_ID.Command): XML.Body = {
-    val xml = report_lints(lint_report.command_lints(id))
-    if (xml.isEmpty) Nil
-    else XML.elem(Markup.KEYWORD1, text("lints:")) :: xml
-  }
-
-  override def present_for_snapshot(lint_report: Linter.Lint_Report,
-    show_descriptions: Boolean = false): XML.Body =
-    report_lints(
+  override def present(
+    lint_report: Linter.Lint_Report,
+    header: Boolean = false,
+    show_descriptions: Boolean = false
+  ): XML.Body = {
+    val report = report_lints(
       lint_report.results,
       compact = false,
       show_descriptions = show_descriptions)
-
-  override def with_info(report: XML.Body, node: Document.Node.Name, elapsed: Time): XML.Body =
-    List(XML.Elem(Markup("report",
-      Linter_Markup.Theory(node.toString) ::: Linter_Markup.Timing(elapsed.ms)), report))
+    if (!header) report
+    else List(XML.Elem(Markup("report", Linter_Markup.Theory(lint_report.name.toString)), report))
+  }
 }
 
-object Count extends Presenter[List[Any]] {
-  override def to_string(report: List[Any]): String = report.mkString(",")
-  override def mk_string(reports: List[List[Any]]): String = to_string(reports.flatten)
-  override def present_for_command(lint_report: Linter.Lint_Report, id: Document_ID.Command): List[Any] =
-    List(lint_report.results.length)
-  override def present_for_snapshot(lint_report: Linter.Lint_Report, show_descriptions: Boolean): List[Any] =
-    List(lint_report.results.length)
-  override def with_info(report: List[Any], node: Node.Name, elapsed: Time): List[Any] =
-    node.theory :: report
+object Count extends Presenter[(Document.Node.Name, Int)] {
+  override def to_string(report: (Node.Name, Int)): String =
+    report._1.toString + "," + report._2.toString
+
+  override def mk_string(reports: List[(Node.Name, Int)]): String =
+    reports.map(to_string).mkString("\n")
+
+  override def present(
+    lint_report: Linter.Lint_Report,
+    header: Boolean = false,
+    show_descriptions: Boolean
+  ): (Node.Name, Int) = (lint_report.name, lint_report.results.length)
 }

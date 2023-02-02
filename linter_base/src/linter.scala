@@ -16,9 +16,9 @@ object Linter {
       .command_iterator()
       .map { case (command, offset) => Parsed_Command(command, offset, snapshot) }
       .toList
-
-    lint_selection.get_lints.foldLeft(Lint_Report.empty)((report, lint) =>
-      lint.lint(parsed_commands, report))
+    lint_selection.get_lints.foldLeft(Lint_Report.init(snapshot.node_name)) {
+      case (report, lint) => lint.lint(parsed_commands, report)
+    }
   }
 
   object RToken {
@@ -104,19 +104,18 @@ object Linter {
   }
 
   object Lint_Report {
-    val empty: Lint_Report = new Lint_Report(Nil)
+    def init(name: Document.Node.Name): Lint_Report = new Lint_Report(name, Nil)
   }
 
-  class Lint_Report(_results: List[Lint_Result]) {
-    def add_result(result: Lint_Result): Lint_Report = new Lint_Report(result :: _results)
+  class Lint_Report private(val name: Document.Node.Name, _results: List[Lint_Result]) {
+    def +(result: Lint_Result): Lint_Report = new Lint_Report(name, result :: _results)
 
-    def results: List[Lint_Result] =
-      _results.sortWith((r1, r2) => Text.Range.Ordering.compare(r1.range, r2.range) < 0)
+    def results: List[Lint_Result] = _results.sortBy(_.range.start)
 
-    def command_lints(id: Document_ID.Command): List[Lint_Result] =
-      _results
+    def command_lints(id: Document_ID.Command): Lint_Report =
+      new Linter.Lint_Report(name, _results
         .filter(_.commands.exists(_.command.id == id))
-        .sortBy(-_.severity.id) // Highest severity first
+        .sortBy(-_.severity.id)) // Highest severity first
 
     def ranges(line_range: Text.Range = Text.Range.full): List[Text.Info[Linter.Severity.Level]] =
       _results
@@ -172,22 +171,24 @@ object Linter {
       range: Text.Range,
       edit: Option[Edit],
       command: Parsed_Command,
-      report: Lint_Report): Lint_Report = report.add_result(
-      Lint_Result(name, message, range, edit, severity, command, short_description))
+      report: Lint_Report
+    ): Lint_Report =
+      report + Lint_Result(name, message, range, edit, severity, command, short_description)
 
     def add_result(
       message: String,
       range: Text.Range,
       edit: Option[Edit],
       commands: List[Parsed_Command],
-      report: Lint_Report): Lint_Report = report.add_result(
-      Lint_Result(name, message, range, edit, severity, commands, short_description))
+      report: Lint_Report
+    ): Lint_Report =
+      report + Lint_Result(name, message, range, edit, severity, commands, short_description)
   }
 
   abstract class Single_Command_Lint(val name: String, val severity: Severity.Level) extends Lint {
     def lint(commands: List[Parsed_Command], report: Lint_Report): Lint_Report = commands
       .flatMap(command => lint(command, Reporter(command, name, severity, short_description)))
-      .foldLeft(report)((report, result) => report.add_result(result))
+      .foldLeft(report)(_ + _)
 
     def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result]
   }

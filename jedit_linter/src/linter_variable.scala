@@ -39,10 +39,10 @@ class Linter_Variable {
     if (_enabled) {
       lint_cache.get(snapshot.node_name) match {
         case Some((_, report)) => report
-        case None => Linter.Lint_Report.empty
+        case None => Linter.Lint_Report.init(snapshot.node_name)
       }
     }
-    else Linter.Lint_Report.empty
+    else Linter.Lint_Report.init(snapshot.node_name)
   }
 
   private def refresh_lint(): Unit = synchronized {
@@ -52,7 +52,7 @@ class Linter_Variable {
     } {
       do_lint(snapshot)
       val report = lint_report(snapshot)
-      val overlays = Linter_Overlay.Presenter.present_for_snapshot(report)
+      val overlays = Linter_Overlay.Presenter.present(report)
       Linter_Plugin.instance.foreach(_.overlays.update(overlays))
     }
   }

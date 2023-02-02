@@ -53,12 +53,11 @@ object Linter_Overlay {
 
     override def mk_string(reports: List[State]): String = reports.mkString(", ")
 
-    override def present_for_command(lint_report: Linter.Lint_Report,
-      id: Document_ID.Command): Linter_Overlay.State =
-      present_for_snapshot(lint_report).find(_._1.id == id).map(Map(_)).getOrElse(Map.empty)
-
-    override def present_for_snapshot(lint_report: Linter.Lint_Report,
-      show_desriptions: Boolean = false): Linter_Overlay.State = {
+    override def present(
+      lint_report: Linter.Lint_Report,
+      header: Boolean = false,
+      show_descriptions: Boolean = false,
+    ): Linter_Overlay.State = {
 
       val commands = lint_report.results
         .flatMap(result => result.commands.map(_ -> result))
@@ -87,8 +86,5 @@ object Linter_Overlay {
       }
       overlays.toMap
     }
-
-    override def with_info(report: State, node: Document.Node.Name, elapsed: Time): State =
-      report.view.mapValues(args => "info" :: ("Linted " + node + " in " + elapsed) :: args).toMap
   }
 }
