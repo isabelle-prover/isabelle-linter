@@ -203,7 +203,7 @@ object Linter {
         clean_build = clean_build,
         dirs = dirs,
         select_dirs = select_dirs,
-        numa_shuffling = NUMA.enabled_warning(progress, numa_shuffling),
+        numa_shuffling = NUMA.check(progress, numa_shuffling),
         max_jobs = max_jobs,
         verbose = verbose_build)
     if (!res.ok) System.exit(res.rc)
