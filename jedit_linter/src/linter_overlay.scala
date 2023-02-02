@@ -54,7 +54,7 @@ object Linter_Overlay {
     override def mk_string(reports: List[State]): String = reports.mkString(", ")
 
     override def present(
-      lint_report: Linter.Lint_Report,
+      lint_report: Linter.Report,
       header: Boolean = false,
       show_descriptions: Boolean = false,
     ): Linter_Overlay.State = {

@@ -9,7 +9,7 @@ package isabelle.linter
 import isabelle.Command.Blobs_Info
 import isabelle.Document.*
 import isabelle.*
-import isabelle.linter.Linter.{Lint_Report, Lint_Result, Severity}
+import isabelle.linter.Linter.{Report, Result, Severity}
 
 import scala.collection.mutable.ListBuffer
 
@@ -67,7 +67,7 @@ object Linter_Tool {
     verbose: Boolean,
     console: Boolean,
     progress: Progress
-  ): List[Lint_Report] = {
+  ): List[Report] = {
     progress.echo("Linting " + session_name)
 
     val base = deps.get(session_name).getOrElse(error("Deps not found for " + session_name))
@@ -131,7 +131,7 @@ object Linter_Tool {
     val sessions_structure = full_sessions.selection(selection)
     val deps = Sessions.deps(sessions_structure)
 
-    val lint_res: List[Lint_Report] =
+    val lint_res: List[Report] =
       sessions_structure.build_selection(selection).map(session_name =>
         Future.fork {
           lint_session(session_name, selection = lint_selection, presenter = presenter,

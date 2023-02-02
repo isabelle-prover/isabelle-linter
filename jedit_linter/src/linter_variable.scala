@@ -12,7 +12,7 @@ import isabelle.linter._
 
 
 class Linter_Variable {
-  private var lint_cache: Map[Document.Node.Name, (Document.Version, Linter.Lint_Report)] = Map.empty
+  private var lint_cache: Map[Document.Node.Name, (Document.Version, Linter.Report)] = Map.empty
   private var lint_selection: Lint_Store.Selection = Lint_Store.Selection.empty
   private var _enabled: Boolean = false
 
@@ -35,14 +35,14 @@ class Linter_Variable {
   def do_lint(snapshot: Document.Snapshot): Unit =
     if (_enabled) update_cache(snapshot)
 
-  def lint_report(snapshot: Document.Snapshot): Linter.Lint_Report = {
+  def lint_report(snapshot: Document.Snapshot): Linter.Report = {
     if (_enabled) {
       lint_cache.get(snapshot.node_name) match {
         case Some((_, report)) => report
-        case None => Linter.Lint_Report.init(snapshot.node_name)
+        case None => Linter.Report.init(snapshot.node_name)
       }
     }
-    else Linter.Lint_Report.init(snapshot.node_name)
+    else Linter.Report.init(snapshot.node_name)
   }
 
   private def refresh_lint(): Unit = synchronized {
