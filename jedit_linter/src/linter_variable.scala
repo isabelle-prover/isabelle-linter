@@ -18,7 +18,7 @@ class Linter_Variable {
 
   private def update_cache(snapshot: Document.Snapshot): Unit = {
     lazy val new_cache =
-      lint_cache + (snapshot.node_name -> (snapshot.version, Linter.lint(snapshot, lint_selection)))
+      lint_cache + (snapshot.node_name -> (snapshot.version, Linter.lint_snapshot(snapshot, lint_selection)))
     lint_cache get snapshot.node_name match {
       case None => lint_cache = new_cache
       case Some((version, _)) => if (snapshot.version.id < version.id) lint_cache = new_cache
