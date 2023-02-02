@@ -12,6 +12,59 @@ import isabelle._
 
 import Linter._
 
+object RToken {
+  def unapply(r: Text.Info[Token]): Option[(Token.Kind.Value, String, Text.Range)] =
+    Some(r.info.kind, r.info.source, r.range)
+
+  def apply(token: Token, offset: Text.Offset): Text.Info[Token] =
+    Text.Info(Text.Range(0, token.source.length()) + offset, token)
+}
+
+object Parsers {
+  def list_range(ranges: List[Text.Range]): Text.Range = ranges match {
+    case _ :: _ => Text.Range(ranges.head.start, ranges.last.stop)
+    case Nil => Text.Range.offside
+  }
+}
+
+object Parsed_Command {
+  def unapply(command: Parsed_Command): Option[String] = Some(command.kind)
+}
+
+case class Parsed_Command(
+  command: Command,
+  offset: Text.Offset,
+  snapshot: Document.Snapshot
+) {
+  val node_name: Document.Node.Name = snapshot.node_name
+  val kind: String = command.span.kind.toString()
+  val range: Text.Range = command.range + offset
+  val source: String = command.source
+
+  def source(range: Text.Range): String = command.source(range - this.range.start)
+
+  def generate_positions(
+    tokens: List[Token],
+    start_offset: Text.Offset
+  ): List[Text.Info[Token]] = {
+    Utils.map_accum_l[Token, Text.Offset, Text.Info[Token]](
+      tokens, start_offset, {
+        case (token, offset) =>
+          val rtoken = RToken(token, offset)
+          (rtoken, rtoken.range.stop)
+      })
+  }
+
+  val tokens: List[Text.Info[Token]] = generate_positions(command.span.content, offset)
+
+  lazy val ast_node: Text.Info[AST_Node] =
+    Token_Parsers.parse(Token_Parsers.token_parser, tokens) match {
+      case Token_Parsers.Success(result, Token_Parsers.Token_Reader(Nil)) => result
+      case Token_Parsers.Success(_, next) =>
+        Text.Info(range, Failed(s"Failed parsing. $next left"))
+      case failure: Token_Parsers.NoSuccess => Text.Info(range, Failed(failure.msg))
+    }
+}
 
 object Token_Parsers extends Token_Parsers {
   case class Token_Reader(in: List[Text.Info[Token]]) extends input.Reader[Text.Info[Token]] {
@@ -118,7 +171,7 @@ trait Token_Parsers extends Parsers {
 
     def p_name_args: Parser[Text.Info[Method]] = p_name ~ p_method_arg.* ^^ {
       case name ~ args => Text.Info(
-        list_range(name.range :: args.flatten.map(_.range)),
+        Parsers.list_range(name.range :: args.flatten.map(_.range)),
         Simple_Method(name, args = args.flatten))
     }
 

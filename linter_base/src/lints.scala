@@ -139,8 +139,8 @@ object Lints {
         replacement <- gen_replacement(apply_script, has_by)
       } yield add_result(
         """Use "by" instead of a short apply-script.""",
-        list_range(apply_script.map(_.range)),
-        Some(Edit(list_range(apply_script map (_.range)), replacement)),
+        Parsers.list_range(apply_script.map(_.range)),
+        Some(Edit(Parsers.list_range(apply_script map (_.range)), replacement)),
         apply_script,
         report)
       new_report.getOrElse(report)
@@ -268,7 +268,7 @@ object Lints {
         if (low_level_commands.length > MIN_LENGTH) {
           add_result(
             "Compress low-level proof methods into automated search.",
-            list_range(low_level_commands.map(_.range)),
+            Parsers.list_range(low_level_commands.map(_.range)),
             None,
             low_level_commands,
             report)
@@ -420,7 +420,7 @@ object Lints {
             report(
               """Do not use axiomatization with a where clause.""",
               Text.Range(xs.head.range.start, xs.last.range.stop),
-              Some(Edit(list_range(xs.map(_.range)), "", Some("Remove where"))))
+              Some(Edit(Parsers.list_range(xs.map(_.range)), "", Some("Remove where"))))
           case Nil => None
         }
       case _ => None
