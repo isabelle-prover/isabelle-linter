@@ -24,12 +24,12 @@ object Linter_Markup {
   val LINT_SEVERITY = "lint_severity"
 
   object Lint_Severity {
-    def apply(severity: Linter.Severity.Level): Properties.T =
+    def apply(severity: Severity.Level): Properties.T =
       List((LINT_SEVERITY, severity.toString))
 
-    def unapply(props: Properties.T): Option[Linter.Severity.Level] =
+    def unapply(props: Properties.T): Option[Severity.Level] =
       props.find(_._1 == LINT_SEVERITY) match {
-        case Some(p) => Linter.Severity.unapply(p._2)
+        case Some(p) => Severity.unapply(p._2)
         case _ => None
       }
   }

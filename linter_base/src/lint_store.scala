@@ -200,7 +200,7 @@ print the lints belonging to each bundle.
     def add_bundles(bundle_names: List[String]): Selection =
       bundle_names.foldLeft(this)((config, bundle) => config.add_bundle(bundle))
 
-    def get_lints: List[Linter.Lint] =
+    def get_lints: List[Lint] =
       warnings.flatMap(get_lint(_, Severity.Warn)).toList ++
         errors.flatMap(get_lint(_, Severity.Error))
   }

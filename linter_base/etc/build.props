@@ -4,6 +4,7 @@ requirements = \
   env:ISABELLE_SCALA_JAR
 sources = \
   src/ast.scala \
+  src/lint.scala \
   src/lint_store.scala \
   src/linter.scala \
   src/linter_tool.scala \
