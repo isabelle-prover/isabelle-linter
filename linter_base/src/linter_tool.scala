@@ -9,7 +9,7 @@ package isabelle.linter
 import isabelle.Command.Blobs_Info
 import isabelle.Document.*
 import isabelle.*
-import isabelle.linter.Linter.{Report, Result, Severity}
+import isabelle.linter.Linter.{Report, Result}
 
 import scala.collection.mutable.ListBuffer
 

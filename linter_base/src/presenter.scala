@@ -8,7 +8,7 @@ package isabelle.linter
 
 import isabelle.*
 import isabelle.Document.Node
-import isabelle.linter.Linter.Severity
+import isabelle.linter.Severity
 
 
 trait Presenter[A] {

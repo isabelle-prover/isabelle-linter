@@ -8,7 +8,7 @@ package isabelle.linter
 
 import Linter.*
 import isabelle.*
-import isabelle.linter.Linter.Severity.Level
+import isabelle.linter.Severity.Level
 
 import scala.annotation.tailrec
 
