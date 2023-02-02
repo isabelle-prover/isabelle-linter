@@ -9,7 +9,7 @@ package isabelle.linter
 import isabelle.Command.Blobs_Info
 import isabelle.Document.*
 import isabelle.*
-import isabelle.linter.Linter.{Lint_Report, Severity}
+import isabelle.linter.Linter.{Lint_Report, Lint_Result, Severity}
 
 import scala.collection.mutable.ListBuffer
 
@@ -63,21 +63,16 @@ object Linter_Tool {
     }
   }
 
-  case class Report[A](raw: Lint_Report, reports: List[A]) {
-    def +(other: Report[A]): Report[A] =
-      Report(new Lint_Report(raw.results ++ other.raw.results), reports ++ other.reports)
-  }
-
-  def lint_session[A](
+  def lint_session(
     session_name: String,
     selection: Lint_Store.Selection,
-    presenter: Presenter[A],
+    presenter: Presenter[_],
     store: Sessions.Store,
     deps: Sessions.Deps,
     verbose: Boolean,
     console: Boolean,
     progress: Progress
-  ): Report[A] = {
+  ): List[Lint_Report] = {
     progress.echo("Linting " + session_name)
 
     val base = deps.get(session_name).getOrElse(error("Deps not found for " + session_name))
@@ -92,20 +87,14 @@ object Linter_Tool {
             progress.echo_warning(thy_heading + " missing")
             None
           case Some(snapshot) =>
-            val start = Date.now()
-            val raw = Linter.lint(snapshot, selection)
-            val end = Date.now()
+            val report = Linter.lint(snapshot, selection)
 
-            val report =
-              presenter.with_info(presenter.present_for_snapshot(raw),
-                snapshot.node_name, end.time - start.time)
+            if (console)
+              progress.echo(presenter.to_string(presenter.present(report, header = true)))
 
-            if (console && (verbose || raw.results.nonEmpty))
-              progress.echo(presenter.to_string(report))
-
-            Some(Report(raw, List(report)))
+            Some(report)
         }
-      }.fold(Report(new Lint_Report(Nil), Nil))(_ + _)
+      }
     }
   }
 
@@ -125,7 +114,7 @@ object Linter_Tool {
     console: Boolean = true,
     verbose_build: Boolean = false,
     verbose: Boolean = false
-  ): Report[A] = {
+  ): List[A] = {
     val res =
       Build.build(options,
         selection,
@@ -147,21 +136,25 @@ object Linter_Tool {
     val sessions_structure = full_sessions.selection(selection)
     val deps = Sessions.deps(sessions_structure)
 
-    val lint_res: Report[A] = sessions_structure.build_selection(selection).map(session_name =>
-      Future.fork {
-        lint_session(session_name, selection = lint_selection, presenter = presenter, store = store,
-          deps = deps, console = console, verbose = verbose, progress = progress)
-        }).map(_.join).fold(Report(new Lint_Report(Nil), Nil))(_ + _)
+    val lint_res: List[Lint_Report] =
+      sessions_structure.build_selection(selection).map(session_name =>
+        Future.fork {
+          lint_session(session_name, selection = lint_selection, presenter = presenter,
+            store = store, deps = deps, console = console, verbose = verbose, progress = progress)
+          }).flatMap(_.join)
 
-    out_file.foreach { file => File.write(file, presenter.mk_string(lint_res.reports))}
+    val presented = lint_res.map(presenter.present(_, header = true))
+
+    out_file.foreach(File.write(_, presenter.mk_string(presented)))
     
     fail_on match {
       case Some(severity) =>
-        if (lint_res.raw.results.exists(_.severity >= severity))
+        if (lint_res.flatMap(_.results).exists(_.severity >= severity))
           System.exit(1)
       case None =>
     }
-    lint_res
+
+    presented
   }
 
 
