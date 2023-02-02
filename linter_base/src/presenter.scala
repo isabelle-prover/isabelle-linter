@@ -61,7 +61,7 @@ case class Text_Presenter(do_underline: Boolean) extends Presenter[String] {
     lint_results.map(report_result).mkString("\n" + "=" * 30 + "\n")
 
   private def report_result(lint_result: Linter.Result): String = {
-    val commands_range = Linter.list_range(lint_result.commands.map(_.range))
+    val commands_range = Parsers.list_range(lint_result.commands.map(_.range))
     val position = lint_result.line_range.start
     val commands_source =
       lint_result.node
