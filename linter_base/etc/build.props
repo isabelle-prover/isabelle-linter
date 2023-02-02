@@ -7,7 +7,6 @@ sources = \
   src/lint.scala \
   src/lint_store.scala \
   src/linter.scala \
-  src/linter_tool.scala \
   src/lints.scala \
   src/lint_description.scala \
   src/markup.scala \
