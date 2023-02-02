@@ -16,14 +16,14 @@ trait Presenter[A] {
   def mk_string(reports: List[A]): String
 
   def present(
-    lint_report: Linter.Lint_Report,
+    lint_report: Linter.Report,
     header: Boolean = false,
     show_descriptions: Boolean = false,
   ): A
 }
 
 object JSON_Presenter extends Presenter[JSON.T] {
-  private def report_result(lint_result: Linter.Lint_Result): JSON.T = JSON.Object(
+  private def report_result(lint_result: Linter.Result): JSON.T = JSON.Object(
     "name" -> lint_result.lint_name,
     "severity" -> lint_result.severity.toString,
     "startOffset" -> lint_result.range.start,
@@ -47,7 +47,7 @@ object JSON_Presenter extends Presenter[JSON.T] {
     JSON.Format.apply(JSON.Object("reports" -> reports))
 
   override def present(
-    lint_report: Linter.Lint_Report,
+    lint_report: Linter.Report,
     header: Boolean = false,
     show_descriptions: Boolean = false
   ): JSON.T =
@@ -57,10 +57,10 @@ object JSON_Presenter extends Presenter[JSON.T] {
 }
 
 case class Text_Presenter(do_underline: Boolean) extends Presenter[String] {
-  private def report_results(lint_results: List[Linter.Lint_Result]): String =
+  private def report_results(lint_results: List[Linter.Result]): String =
     lint_results.map(report_result).mkString("\n" + "=" * 30 + "\n")
 
-  private def report_result(lint_result: Linter.Lint_Result): String = {
+  private def report_result(lint_result: Linter.Result): String = {
     val commands_range = Linter.list_range(lint_result.commands.map(_.range))
     val position = lint_result.line_range.start
     val commands_source =
@@ -116,7 +116,7 @@ case class Text_Presenter(do_underline: Boolean) extends Presenter[String] {
   override def mk_string(reports: List[String]): String = reports.mkString("\n")
 
   override def present(
-    lint_report: Linter.Lint_Report,
+    lint_report: Linter.Report,
     header: Boolean = false,
     show_descriptions: Boolean = false
   ): String = {
@@ -129,7 +129,7 @@ case class Text_Presenter(do_underline: Boolean) extends Presenter[String] {
 
 object XML_Presenter extends Presenter[XML.Body] {
   private def report_lints(
-    lint_results: List[Linter.Lint_Result],
+    lint_results: List[Linter.Result],
     compact: Boolean = true,
     show_descriptions: Boolean = false
   ): XML.Body = {
@@ -145,7 +145,7 @@ object XML_Presenter extends Presenter[XML.Body] {
   }
 
   private def report_lint(
-    lint_result: Linter.Lint_Result,
+    lint_result: Linter.Result,
     lint_number: Int = 0,
     compact: Boolean = true,
     show_descriptions: Boolean = false
@@ -180,7 +180,7 @@ object XML_Presenter extends Presenter[XML.Body] {
         Position.Range(edit.range) ::: Markup.Content(edit.replacement)),
       text(edit.message)) :: Nil
 
-  def position_markup(lint_result: Linter.Lint_Result): XML.Body = {
+  def position_markup(lint_result: Linter.Result): XML.Body = {
     val pos = Position.Offset(lint_result.range.start + 1) :::
       Position.End_Offset(lint_result.range.stop) :::
       Position.File(lint_result.commands.head.node_name.node)
@@ -189,7 +189,7 @@ object XML_Presenter extends Presenter[XML.Body] {
       text(lint_result.line_range.start.print)) :: text(":\n")
   }
 
-  def add_meta(body: XML.Body, lint_result: Linter.Lint_Result): XML.Body = {
+  def add_meta(body: XML.Body, lint_result: Linter.Result): XML.Body = {
     XML.Elem(Markup(Linter_Markup.LINT_RESULT,
       Linter_Markup.Lint_Name(lint_result.lint_name)
         ::: Linter_Markup.Lint_Message(lint_result.message)
@@ -210,7 +210,7 @@ object XML_Presenter extends Presenter[XML.Body] {
     XML.string_of_tree(XML.Elem(Markup("reports", Nil), reports.flatten))
 
   override def present(
-    lint_report: Linter.Lint_Report,
+    lint_report: Linter.Report,
     header: Boolean = false,
     show_descriptions: Boolean = false
   ): XML.Body = {
@@ -231,7 +231,7 @@ object Count extends Presenter[(Document.Node.Name, Int)] {
     reports.map(to_string).mkString("\n")
 
   override def present(
-    lint_report: Linter.Lint_Report,
+    lint_report: Linter.Report,
     header: Boolean = false,
     show_descriptions: Boolean
   ): (Node.Name, Int) = (lint_report.name, lint_report.results.length)

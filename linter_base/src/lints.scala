@@ -29,7 +29,7 @@ object Lints {
         .references("http://proofcraft.org/blog/isabelle-style.html")
 
     @tailrec
-    def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
+    def lint_proper(commands: List[Parsed_Command], report: Report): Report =
       commands match {
         case Parsed_Command("apply") :: (proof@Parsed_Command("proof")) :: next =>
           val new_report = add_result(
@@ -65,7 +65,7 @@ object Lints {
           "  apply auto",
           "done")
 
-    override def lint_proof(proof: Text.Info[Proof], report: Reporter): Option[Lint_Result] =
+    override def lint_proof(proof: Text.Info[Proof], report: Reporter): Option[Result] =
       proof.info match {
         case By(method1, method2) =>
           val apply1 = s"apply ${report.source(method1.range)}\n"
@@ -132,9 +132,9 @@ object Lints {
 
     private def report_lint(
       apply_script: List[Parsed_Command],
-      report: Lint_Report,
+      report: Report,
       has_by: Boolean = false
-    ): Lint_Report = {
+    ): Report = {
       val new_report = for {
         replacement <- gen_replacement(apply_script, has_by)
       } yield add_result(
@@ -158,7 +158,7 @@ object Lints {
     private def is_simple(command: Parsed_Command): Boolean = ???
 
     @tailrec
-    def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
+    def lint_proper(commands: List[Parsed_Command], report: Report): Report =
       commands match {
         case first
           :: (apply1@Parsed_Command("apply"))
@@ -216,12 +216,12 @@ object Lints {
       case _ => false
     }
 
-    private def report_lint(apply: Parsed_Command, report: Lint_Report): Lint_Report =
+    private def report_lint(apply: Parsed_Command, report: Report): Report =
       add_result("Do not use unrestricted auto as a non-terminal proof method.", apply.range,
         None, apply, report)
 
     @tailrec
-    def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
+    def lint_proper(commands: List[Parsed_Command], report: Report): Report =
       commands match {
         case (apply@Parsed_Command("apply")) :: next_command :: next
           if is_proof_command(next_command) && is_unrestricted_auto(apply.ast_node.info) =>
@@ -260,7 +260,7 @@ object Lints {
     }
 
     @tailrec
-    def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report = {
+    def lint_proper(commands: List[Parsed_Command], report: Report): Report = {
       val (low_level_commands, rest) =
         commands.dropWhile(!is_low_level_apply(_)).span(is_low_level_apply)
 
@@ -324,8 +324,8 @@ object Lints {
       attrs.contains("simpdel") // Whitespaces are ignored
 
     private def proces_declaration(command: Parsed_Command)(
-      report_simpset: (Lint_Report, Set[String]),
-      declaration: Declaration): (Lint_Report, Set[String]
+      report_simpset: (Report, Set[String]),
+      declaration: Declaration): (Report, Set[String]
       ) = {
       val (ident, attrs) = declaration
       val (report, simpset) = report_simpset
@@ -349,9 +349,9 @@ object Lints {
     @tailrec
     private def go(
       commands: List[Parsed_Command],
-      report: Lint_Report,
+      report: Report,
       simpset: Set[String]
-    ): Lint_Report = {
+    ): Report = {
       commands match {
         case (head@Parsed_Command("declare")) :: next =>
           try_transform(declare_command, head) match {
@@ -366,7 +366,7 @@ object Lints {
       }
     }
 
-    def lint_proper(commands: List[Parsed_Command], report: Lint_Report): Lint_Report =
+    def lint_proper(commands: List[Parsed_Command], report: Report): Report =
       go(commands, report, Set.empty)
   })
 
@@ -382,7 +382,7 @@ object Lints {
         .add("This lint triggers on every use of the ").inline_code("apply")
         .add(" command and suggests to use an Isar proof instead.")
 
-    def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] = command match {
+    def lint(command: Parsed_Command, report: Reporter): Option[Result] = command match {
       case c@Parsed_Command("apply") =>
         report("Use Isar instead of apply-scripts.", c.range, None)
       case _ => None
@@ -413,7 +413,7 @@ object Lints {
           """all_false: "∀x. ¬P x"""")
         .references("http://proofcraft.org/blog/isabelle-style.html")
 
-    def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] = command.tokens match {
+    def lint(command: Parsed_Command, report: Reporter): Option[Result] = command.tokens match {
       case RToken(Token.Kind.COMMAND, "axiomatization", _) :: next =>
         next.dropWhile(_.info.source != "where") match {
           case xs@_ :: _ =>
@@ -445,7 +445,7 @@ object Lints {
       }
     }
 
-    def lint(command: Parsed_Command, report: Reporter): Option[Lint_Result] =
+    def lint(command: Parsed_Command, report: Reporter): Option[Result] =
       if (illegal_commands.contains(command.kind))
         report(message, command.range, Some(Edit(command.range, "", Some("Remove invocation"))))
       else None
@@ -468,7 +468,7 @@ object Lints {
     private def is_smt_oracle(attr: List[Elem]): Boolean =
       attr.headOption.exists(_.info.content == "smt_oracle")
 
-    override def parser(report: Reporter): Parser[Some[Lint_Result]] =
+    override def parser(report: Reporter): Parser[Some[Result]] =
       p_command("declare") ~> p_sq_bracketed(p_sq_bracketed(
         p_attributes >> {
           _.find(is_smt_oracle) match {
@@ -527,7 +527,7 @@ object Lints {
     def no_expect(attributes: List[List[Text.Info[Token]]]): Boolean =
       !attributes.exists(_.headOption.exists(text => ok_attribs.contains(text.info.content)))
 
-    override def lint_ast_node(elem: Text.Info[AST_Node], report: Reporter): Option[Lint_Result] =
+    override def lint_ast_node(elem: Text.Info[AST_Node], report: Reporter): Option[Result] =
       elem.info match {
         case Counter_Example_Finder(_, attributes) if attributes.isEmpty || no_expect(attributes)
         => report(
@@ -546,7 +546,7 @@ object Lints {
 
     val long_description: Lint_Description = short_description
 
-    override def parser(report: Reporter): Parser[Some[Lint_Result]] =
+    override def parser(report: Reporter): Parser[Some[Result]] =
       p_command("fun", "primrec", "abbreviation", "definition", "inductive", "inductive_set") ~>
         elem("ident", t => t.info.is_ident && t.info.content.length < 2) ^^ {
           case Text.Info(range, token) =>
@@ -584,8 +584,8 @@ object Lints {
       p_atom(t => !(t.is_keyword("shows") || t.is_keyword("and"))).* ~>
         (p_keyword("shows", "and") ~> p_attr | p_keyword("shows", "and")^^(_ => (None, None)))
 
-    override def parser(reporter: Reporter): Parser[Some[Lint_Result]] = {
-      def report(attr: Elem): Parser[Some[Lint_Result]] =
+    override def parser(reporter: Reporter): Parser[Some[Result]] = {
+      def report(attr: Elem): Parser[Some[Result]] =
         success(reporter("Do not use global attributes on unnamed lemmas.", attr.range, None))
 
       ((p_command("lemma", "theorem", "corollary") ~> p_attr) ~
@@ -621,7 +621,7 @@ object Lints {
         .add(" The lints warns about using the following methods: ")
         .inline_code(TACTICS.mkString(", "))
 
-    override def lint_method(method: Text.Info[Method], report: Reporter): Option[Lint_Result] =
+    override def lint_method(method: Text.Info[Method], report: Reporter): Option[Result] =
       method.info match {
         case Simple_Method(RToken(_, name, _), _, _) if TACTICS.contains(name) =>
           report("Do not use tactic proofs.", method.range, None)
@@ -651,7 +651,7 @@ object Lints {
       case _ => false
     }
 
-    override def parser(report: Reporter): Parser[Some[Lint_Result]] =
+    override def parser(report: Reporter): Parser[Some[Result]] =
       (p_command("lemma", "theorem", "corollary") ~ p_ident.?) ~> p_sq_bracketed(p_attributes) >> {
         _.find(simp_or_cong) match {
           case None => failure("no match")
@@ -677,7 +677,7 @@ object Lints {
         .add("explicitly state which rule is needed.")
         .references("http://proofcraft.org/blog/isabelle-style.html")
 
-    override def lint_method(method: Text.Info[Method], report: Reporter): Option[Lint_Result] =
+    override def lint_method(method: Text.Info[Method], report: Reporter): Option[Result] =
       method.info match {
         case Simple_Method(RToken(_, "rule", _), _, Nil) =>
           report("Do not use implicit rule.", method.range, None)
@@ -751,7 +751,7 @@ object Lints {
     override def lint_isar_proof(
       method: Option[Text.Info[Method]],
       report: Reporter
-    ): Option[Lint_Result] =
+    ): Option[Result] =
       for {
         Text.Info(range, s_method) <- method
         if calls_simplifier(s_method) || is_complex_method(s_method)
@@ -774,7 +774,7 @@ object Lints {
         .add(") in order to make debugging proofs easier.")
         .references("http://proofcraft.org/blog/isabelle-style-part2.html")
 
-    override def lint_method(method: Text.Info[Method], report: Reporter): Option[Lint_Result] =
+    override def lint_method(method: Text.Info[Method], report: Reporter): Option[Result] =
       method.info match {
         case Simple_Method(RToken(_, "simp", _), _, _) =>
           report("Consider forcing failure.", method.range, None)
@@ -801,7 +801,7 @@ object Lints {
         has_auto(left.info) || has_auto(right.info)
     }
 
-    override def lint_method(method: Text.Info[Method], report: Reporter): Option[Lint_Result] =
+    override def lint_method(method: Text.Info[Method], report: Reporter): Option[Result] =
       method.info match {
         case Simple_Method(_, _, _) => None
         case Combined_Method(left, Method.Combinator.Struct, _, _) =>
@@ -829,7 +829,7 @@ object Lints {
 
     val message: String = "Avoid complex methods."
 
-    override def lint_method(method: Text.Info[Method], report: Reporter): Option[Lint_Result] =
+    override def lint_method(method: Text.Info[Method], report: Reporter): Option[Result] =
       if (is_complex_method(method.info)) report(message, method.range, None)
       else None
   })
@@ -840,7 +840,7 @@ object Lints {
 
     val long_description: Lint_Description = short_description
 
-    override def lint_ast_node(elem: Text.Info[AST_Node], report: Reporter): Option[Lint_Result] =
+    override def lint_ast_node(elem: Text.Info[AST_Node], report: Reporter): Option[Result] =
       report(s"Parsed: ${elem.info}", elem.range, None)
   })
 }
