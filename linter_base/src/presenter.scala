@@ -224,10 +224,12 @@ object XML_Presenter extends Presenter[XML.Body] {
 }
 
 class CSV_Presenter(configuration: Lint_Store.Selection) extends Presenter[CSV.Record] {
+  val lints = configuration.get_lints.map(_.name)
+
   override def to_string(report: CSV.Record): String = report.toString
 
   override def mk_string(reports: List[CSV.Record]): String =
-    CSV.File("", "theory" :: configuration.get_lints.map(_.name), reports).toString
+    CSV.File("", "theory" :: lints, reports).toString
 
   override def present(
     lint_report: Linter.Report,
@@ -235,7 +237,7 @@ class CSV_Presenter(configuration: Lint_Store.Selection) extends Presenter[CSV.R
     show_descriptions: Boolean
   ): CSV.Record = {
     val num = lint_report.results.groupBy(_.lint_name).view.mapValues(_.length).toMap
-    val res = lint_report.name :: configuration.get_lints.map(_.name).map(num.getOrElse(_, 0))
+    val res = lint_report.name :: lints.map(num.getOrElse(_, 0))
     CSV.Record(res: _*)
   }
 }
