@@ -192,7 +192,6 @@ object Linter {
     numa_shuffling: Boolean = false,
     max_jobs: Int = 1,
     console: Boolean = true,
-    verbose_build: Boolean = false,
     verbose: Boolean = false
   ): List[A] = {
     val res =
@@ -203,9 +202,8 @@ object Linter {
         clean_build = clean_build,
         dirs = dirs,
         select_dirs = select_dirs,
-        numa_shuffling = NUMA.check(progress, numa_shuffling),
-        max_jobs = max_jobs,
-        verbose = verbose_build)
+        numa_shuffling = numa_shuffling,
+        max_jobs = max_jobs)
     if (!res.ok) System.exit(res.rc)
 
     val store = Sessions.store(options)
@@ -243,8 +241,6 @@ object Linter {
   val isabelle_tool = Isabelle_Tool("lint", "lint theory sources based on PIDE markup",
     Scala_Project.here,
   { args =>
-    val build_options = Word.explode(Isabelle_System.getenv("ISABELLE_BUILD_OPTIONS"))
-
     var fail_on: Option[Severity.Level] = None
     var base_sessions: List[String] = Nil
     var select_dirs: List[Path] = Nil
@@ -259,7 +255,7 @@ object Linter {
     var session_groups: List[String] = Nil
     var max_jobs = 1
     var list = false
-    var options = Options.init(opts = build_options)
+    var options = Options.init(specs = Options.Spec.ISABELLE_BUILD_OPTIONS)
     var mode = "text"
     var verbose = false
     var exclude_sessions: List[String] = Nil
@@ -347,7 +343,6 @@ Lint isabelle theories.
           numa_shuffling = numa_shuffling,
           max_jobs = max_jobs,
           console = output_file.isEmpty,
-          verbose_build = verbose_build,
           verbose = verbose)
       }
     }
