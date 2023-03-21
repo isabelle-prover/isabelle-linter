@@ -67,6 +67,7 @@ Print lint descriptions.
         Lints.bad_style_command.name,
         Lints.counter_example_finder.name,
         Lints.global_attribute_on_unnamed_lemma.name,
+        Lints.simplifier_isar_initial_method.name,
         Lints.smt_oracle.name))
 
     val foundational =
@@ -75,6 +76,7 @@ Print lint descriptions.
         Lints.auto_structural_composition.name,
         Lints.bad_style_command.name,
         Lints.complex_isar_initial_method.name,
+        Lints.simplifier_isar_initial_method.name,
         Lints.complex_method.name,
         Lints.global_attribute_changes.name,
         Lints.global_attribute_on_unnamed_lemma.name,

@@ -724,7 +724,7 @@ object Lints {
   ) extends AST_Lint(name, severity) with Complex_Methods
 
   val complex_isar_initial_method = Lint_Wrapper("complex_isar_initial_method",
-    (name, severity) => new Complex_Methods_Lint(name, severity, 1, 3) {
+    (name, severity) => new Complex_Methods_Lint(name, severity, 2, 4) {
 
     val short_description: Lint_Description =
       Lint_Description.empty
@@ -734,19 +734,9 @@ object Lints {
     val long_description: Lint_Description =
       Lint_Description.empty
         .add("Initial ").inline_code("proof").add(" methods should be kept simple, in order ")
-        .add("to keep the goals of the proof clear. For example, simplifier calls should ")
-        .add("be avoided, and not many methods should be combined. This lint finds complex ")
-        .add("methods in proof commands.")
+        .add("to keep the goals of the proof clear. For instance, not too many methods should ")
+        .add("be combined. This lint finds complex methods in proof commands.")
         .references("http://proofcraft.org/blog/isabelle-style.html")
-
-    val SIMPLIFIER_METHOD =
-      List("simp", "simp_all", "fastforce", "slowsimp", "bestsimp", "force", "auto", "clarsimp")
-
-    def calls_simplifier(method: Method): Boolean = method match {
-      case Simple_Method(RToken(_, name, _), _, _) => SIMPLIFIER_METHOD.contains(name)
-      case Combined_Method(left, _, right, _) =>
-        calls_simplifier(left.info) || calls_simplifier(right.info)
-    }
 
     override def lint_isar_proof(
       method: Option[Text.Info[Method]],
@@ -754,9 +744,41 @@ object Lints {
     ): Option[Result] =
       for {
         Text.Info(range, s_method) <- method
-        if calls_simplifier(s_method) || is_complex_method(s_method)
+        if is_complex_method(s_method)
       } yield report("Keep initial proof methods simple.", range, None).get
   })
+
+  val simplifier_isar_initial_method = Lint_Wrapper("simplifier_isar_initial_method",
+    (name, severity) => new AST_Lint(name, severity) {
+      val SIMPLIFIER_METHOD =
+        List("simp", "simp_all", "fastforce", "slowsimp", "bestsimp", "force", "auto", "clarsimp")
+
+      def calls_simplifier(method: Method): Boolean = method match {
+        case Simple_Method(RToken(_, name, _), _, _) => SIMPLIFIER_METHOD.contains(name)
+        case Combined_Method(left, _, right, _) =>
+          calls_simplifier(left.info) || calls_simplifier(right.info)
+      }
+
+      val short_description: Lint_Description =
+        Lint_Description.empty
+          .add("Using the simplifier in the ").inline_code("proof").add(" command makes the proof")
+          .add(" brittle and hard to read.")
+
+      val long_description: Lint_Description =
+        Lint_Description.empty
+          .add("Initial ").inline_code("proof").add(" methods should not use the simplifier,")
+          .add(" in order to keep the goals of the proof clear and unchanged.")
+          .references("http://proofcraft.org/blog/isabelle-style.html")
+
+      override def lint_isar_proof(
+        method: Option[Text.Info[Method]],
+        report: Reporter
+      ): Option[Result] =
+        for {
+          Text.Info(range, s_method) <- method
+          if calls_simplifier(s_method)
+        } yield report("Do not use simplifier as initial proof methods.", range, None).get
+    })
 
   val force_failure = Lint_Wrapper("force_failure",
     (name, severity) => new AST_Lint(name, severity) {
@@ -813,7 +835,7 @@ object Lints {
 
 
   val complex_method = Lint_Wrapper("complex_method",
-    (name, severity) => new Complex_Methods_Lint(name, severity, 2, 4) {
+    (name, severity) => new Complex_Methods_Lint(name, severity, 3, 5) {
 
     val short_description: Lint_Description =
       Lint_Description.empty.add("Using complex methods (e.g. too much nesting) should be avoided.")
@@ -853,6 +875,7 @@ class Lints extends Isabelle_Lints(
   Lints.axiomatization_with_where,
   Lints.bad_style_command,
   Lints.complex_isar_initial_method,
+  Lints.simplifier_isar_initial_method,
   Lints.complex_method,
   Lints.counter_example_finder,
   Lints.diagnostic_command,
