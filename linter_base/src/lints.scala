@@ -155,8 +155,6 @@ object Lints {
         case _ => false
       }
 
-    private def is_simple(command: Parsed_Command): Boolean = ???
-
     @tailrec
     def lint_proper(commands: List[Parsed_Command], report: Report): Report =
       commands match {
@@ -165,18 +163,18 @@ object Lints {
           :: (apply2@Parsed_Command("apply"))
           :: (done@Parsed_Command("done"))
           :: next
-          if (check_first_command(first) && is_simple(apply1) && is_simple(apply2)) =>
+          if (check_first_command(first) && !is_complex(apply1) && !is_complex(apply2)) =>
           lint_proper(next, report_lint(apply1 :: apply2 :: done :: Nil, report))
         case first
           :: (apply@Parsed_Command("apply"))
           :: (done@Parsed_Command("done"))
-          :: next if check_first_command(first) && is_simple(apply) =>
+          :: next if check_first_command(first) && !is_complex(apply) =>
           lint_proper(next, report_lint(apply :: done :: Nil, report))
         case first
           :: (apply@Parsed_Command("apply"))
           :: (by@Parsed_Command("by"))
           :: next
-          if check_first_command(first) && is_simple(apply) && single_by(by) =>
+          if check_first_command(first) && !is_complex(apply) && single_by(by) =>
           lint_proper(next, report_lint(apply :: by :: Nil, report, has_by = true))
         case _ :: next => lint_proper(next, report)
         case Nil => report
