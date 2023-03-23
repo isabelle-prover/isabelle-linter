@@ -833,7 +833,7 @@ object Lints {
 
 
   val complex_method = Lint_Wrapper("complex_method",
-    (name, severity) => new Complex_Methods_Lint(name, severity, 3, 5) {
+    (name, severity) => new Complex_Methods_Lint(name, severity, 2, 4) {
 
     val short_description: Lint_Description =
       Lint_Description.empty.add("Using complex methods (e.g. too much nesting) should be avoided.")
