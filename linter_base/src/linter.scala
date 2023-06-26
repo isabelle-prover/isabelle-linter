@@ -147,7 +147,7 @@ object Linter {
     session_name: String,
     selection: Lint_Store.Selection,
     presenter: Presenter[_],
-    store: Sessions.Store,
+    store: Store,
     deps: Sessions.Deps,
     verbose: Boolean,
     console: Boolean,
@@ -206,7 +206,7 @@ object Linter {
         max_jobs = max_jobs)
     if (!res.ok) System.exit(res.rc)
 
-    val store = Sessions.store(options)
+    val store = Store(options)
 
     val full_sessions =
       Sessions.load_structure(options = options, dirs = dirs, select_dirs = select_dirs)
