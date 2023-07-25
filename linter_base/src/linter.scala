@@ -196,7 +196,7 @@ object Linter {
   ): List[A] = {
     val res =
       Build.build(options,
-        selection,
+        selection = selection,
         progress = progress,
         check_unknown_files = Mercurial.is_repository(Path.ISABELLE_HOME),
         clean_build = clean_build,

@@ -80,7 +80,7 @@ object Token_Markup {
   def from_xml(thy_xml: XML.Body): List[Command_Span.Span] = {
 
     def find_span(t: XML.Tree): Option[String] = t match {
-      case XML.Elem(Markup.Command_Span(name), _) => Some(name)
+      case XML.Elem(Markup.Command_Span(arg), _) => Some(arg.name)
       case XML.Elem(_, body) => body.collectFirst((find_span _).unlift)
       case _ => None
     }
@@ -96,9 +96,9 @@ object Token_Markup {
       body match {
         case tree :: body1 =>
           tree match {
-            case XML.Elem(Markup.Command_Span(name), trees) =>
+            case XML.Elem(Markup.Command_Span(arg), trees) =>
               val stop = start + XML.text_length(trees)
-              val kind = Command_Span.Command_Span(name, Position.Range(Text.Range(start, stop)))
+              val kind = Command_Span.Command_Span(arg.name, Position.Range(Text.Range(start, stop)))
               val span = Command_Span.Span(kind, trees.flatMap(map_tokens))
               reduce(stop, body1, res :+ (span, start))
             case XML.Elem(Markup(Markup.COMMENT, Nil), _) =>
