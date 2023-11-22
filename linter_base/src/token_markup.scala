@@ -79,8 +79,8 @@ object Token_Markup {
 
   def from_xml(thy_xml: XML.Body): List[Command_Span.Span] = {
 
-    def find_span(t: XML.Tree): Option[String] = t match {
-      case XML.Elem(Markup.Command_Span(arg), _) => Some(arg.name)
+    def find_span(t: XML.Tree): Option[Markup.Command_Span.Arg] = t match {
+      case XML.Elem(Markup.Command_Span(arg), _) => Some(arg)
       case XML.Elem(_, body) => body.collectFirst((find_span _).unlift)
       case _ => None
     }
@@ -98,7 +98,8 @@ object Token_Markup {
           tree match {
             case XML.Elem(Markup.Command_Span(arg), trees) =>
               val stop = start + XML.text_length(trees)
-              val kind = Command_Span.Command_Span(arg.name, Position.Range(Text.Range(start, stop)))
+              val kind = Command_Span.Command_Span(
+                proper_string(arg.kind), arg.name, Position.Range(Text.Range(start, stop)))
               val span = Command_Span.Span(kind, trees.flatMap(map_tokens))
               reduce(stop, body1, res :+ (span, start))
             case XML.Elem(Markup(Markup.COMMENT, Nil), _) =>
@@ -113,10 +114,10 @@ object Token_Markup {
                 start + XML.text_length(trees), body1.drop(trees.length - 1), res :+ (span, start))
             case t =>
               find_span(t) match {
-              case Some(kind) if XML.content(t) == kind =>
-                val stop = start + kind.length
-                val kind1 = Command_Span.Command_Span(kind, Position.Range(Text.Range(start, stop)))
-                val span = Command_Span.Span(kind1, List(Token(Kind.COMMAND, kind)))
+              case Some(arg) if XML.content(t) == arg.name =>
+                val stop = start + arg.name.length
+                val kind1 = Command_Span.Command_Span(proper_string(arg.kind), arg.name, Position.Range(Text.Range(start, stop)))
+                val span = Command_Span.Span(kind1, List(Token(Kind.COMMAND, arg.name)))
                 reduce(stop, body1, res :+ (span, start))
               case _ =>
                 val span = Command_Span.Span(Command_Span.Ignored_Span, map_tokens(t))
