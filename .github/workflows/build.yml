@@ -2,10 +2,10 @@ name: Build
 on: 
   push:
     branches:
-      - master
+      - devel
   repository_dispatch:
     branches:
-      - master
+      - devel
 jobs:
   compile:
     runs-on: ubuntu-latest
