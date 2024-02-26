@@ -11,6 +11,8 @@ import isabelle.Document.*
 import isabelle.Command.Blobs_Info
 import isabelle.Browser_Info.Config
 
+import scala.collection.mutable
+
 
 object Linter {
   /* result handling */
@@ -183,27 +185,31 @@ object Linter {
     presenter: Presenter[A],
     out_file: Option[Path],
     options: Options,
+    build_hosts: List[Build_Cluster.Host] = Nil,
     selection: Sessions.Selection = Sessions.Selection.empty,
     progress: Progress = new Progress,
     clean_build: Boolean = false,
+    afp_root: Option[Path] = None,
     fail_on: Option[Severity.Level] = None,
     dirs: List[Path] = Nil,
     select_dirs: List[Path] = Nil,
     numa_shuffling: Boolean = false,
-    max_jobs: Int = 1,
+    max_jobs: Option[Int] = None,
     console: Boolean = true,
     verbose: Boolean = false
   ): List[A] = {
     val res =
       Build.build(options,
+        build_hosts = build_hosts,
         selection = selection,
         progress = progress,
         check_unknown_files = Mercurial.is_repository(Path.ISABELLE_HOME),
         clean_build = clean_build,
+        afp_root = afp_root,
         dirs = dirs,
-        select_dirs = select_dirs,
         numa_shuffling = numa_shuffling,
-        max_jobs = max_jobs)
+        max_jobs = max_jobs,
+        select_dirs = select_dirs)
     if (!res.ok) System.exit(res.rc)
 
     val store = Store(options)
@@ -241,31 +247,36 @@ object Linter {
   val isabelle_tool = Isabelle_Tool("lint", "lint theory sources based on PIDE markup",
     Scala_Project.here,
   { args =>
-    var fail_on: Option[Severity.Level] = None
-    var base_sessions: List[String] = Nil
-    var select_dirs: List[Path] = Nil
+    var afp_root: Option[Path] = None
+    val base_sessions = new mutable.ListBuffer[String]
+    val select_dirs = new mutable.ListBuffer[Path]
+    val build_hosts = new mutable.ListBuffer[Build_Cluster.Host]
     var numa_shuffling = false
     var output_file: Option[Path] = None
     var requirements = false
     var verbose_build = false
-    var exclude_session_groups: List[String] = Nil
+    val exclude_session_groups = new mutable.ListBuffer[String]
     var all_sessions = false
     var clean_build = false
-    var dirs: List[Path] = Nil
-    var session_groups: List[String] = Nil
-    var max_jobs = 1
-    var list = false
+    val dirs = new mutable.ListBuffer[Path]
+    var fail_on: Option[Severity.Level] = None
+    val session_groups = new mutable.ListBuffer[String]
+    var max_jobs: Option[Int] = None
+    var list_lints = false
     var options = Options.init(specs = Options.Spec.ISABELLE_BUILD_OPTIONS)
     var mode = "text"
     var verbose = false
-    var exclude_sessions: List[String] = Nil
+    val exclude_sessions = new mutable.ListBuffer[String]
 
     val getopts = Getopts("""
 Usage: isabelle lint [OPTIONS] [SESSIONS ...]
 
   Options are:
+  -A ROOT        include AFP with given root directory (":" for """ + AFP.BASE.implode + """)
   -B NAME        include session NAME and all descendants
   -D DIR         include session directory and select its sessions
+  -H HOSTS       additional cluster host specifications of the form
+                 NAMES:PARAMETERS (separated by commas)
   -N             cyclic shuffling of NUMA CPU nodes (performance tuning)
   -O FILE        write output to file instead of stdout
   -R             refer to requirements of selected sessions
@@ -276,7 +287,8 @@ Usage: isabelle lint [OPTIONS] [SESSIONS ...]
   -d DIR         include session directory
   -f SEVERITY    fail on lints with the specified severity
   -g NAME        select session group NAME
-  -j INT         maximum number of parallel jobs (default 1)
+  -j INT         maximum number of parallel jobs
+                 (default: 1 for local build, 0 for build cluster)
   -l             list the enabled lints (does not run the linter)
   -o OPTION      override Isabelle system OPTION (via NAME=VAL or NAME)
   -r MODE        how to report results (either "text", "json" or "xml", default "text")
@@ -285,24 +297,26 @@ Usage: isabelle lint [OPTIONS] [SESSIONS ...]
 
 Lint isabelle theories.
 """,
-      "B:" -> (arg => base_sessions = base_sessions ::: List(arg)),
-      "D:" -> (arg => select_dirs = select_dirs ::: List(Path.explode(arg))),
+      "A:" -> (arg => afp_root = Some(if (arg == ":") AFP.BASE else Path.explode(arg))),
+      "B:" -> (arg => base_sessions += arg),
+      "D:" -> (arg => select_dirs += Path.explode(arg)),
+      "H:" -> (arg => build_hosts ++= Build_Cluster.Host.parse(Registry.global, arg)),
       "N" -> (_ => numa_shuffling = true),
       "O:" -> (arg => output_file = Some(Path.explode(arg))),
       "R" -> (_ => requirements = true),
       "V" -> (_ => verbose_build = true),
-      "X:" -> (arg => exclude_session_groups = exclude_session_groups ::: List(arg)),
+      "X:" -> (arg => exclude_session_groups += arg),
       "a" -> (_ => all_sessions = true),
       "c" -> (_ => clean_build = true),
-      "d:" -> (arg => dirs = dirs ::: List(Path.explode(arg))),
+      "d:" -> (arg => dirs += Path.explode(arg)),
       "f:" -> (arg => fail_on = Some(Severity.the_level(arg))),
-      "g:" -> (arg => session_groups = session_groups ::: List(arg)),
-      "j:" -> (arg => max_jobs = Value.Int.parse(arg)),
-      "l" -> (_ => list = true),
+      "g:" -> (arg => session_groups += arg),
+      "j:" -> (arg => max_jobs = Some(Value.Nat.parse(arg))),
+      "l" -> (_ => list_lints = true),
       "o:" -> (arg => options = options + arg),
       "r:" -> (arg => mode = arg),
       "v" -> (_ => verbose = true),
-      "x:" -> (arg => exclude_sessions = exclude_sessions ::: List(arg)))
+      "x:" -> (arg => exclude_sessions += arg))
 
     val sessions = getopts(args)
 
@@ -310,7 +324,7 @@ Lint isabelle theories.
 
     val configuration = Lint_Store.Selection(options)
 
-    if (list) progress.echo(commas(configuration.get_lints.map(_.name).sorted))
+    if (list_lints) progress.echo(commas(configuration.get_lints.map(_.name).sorted))
     else {
       val presenter = mode match {
         case "text" => Text_Presenter(do_underline = true)
@@ -331,18 +345,20 @@ Lint isabelle theories.
           selection = Sessions.Selection(
             requirements = requirements,
             all_sessions = all_sessions,
-            base_sessions = base_sessions,
-            exclude_session_groups = exclude_session_groups,
-            exclude_sessions = exclude_sessions,
-            session_groups = session_groups,
-            sessions = sessions),
+            base_sessions = base_sessions.toList,
+            exclude_session_groups = exclude_session_groups.toList,
+            exclude_sessions = exclude_sessions.toList,
+            session_groups = session_groups.toList,
+            sessions = sessions.toList),
           progress = progress,
           clean_build = clean_build,
-          dirs = dirs,
-          fail_on = fail_on,
-          select_dirs = select_dirs,
-          numa_shuffling = numa_shuffling,
+          afp_root = afp_root,
+          dirs = dirs.toList,
+          select_dirs = select_dirs.toList,
+          numa_shuffling = Host.numa_check(progress, numa_shuffling),
           max_jobs = max_jobs,
+          build_hosts = build_hosts.toList,
+          fail_on = fail_on,
           console = output_file.isEmpty,
           verbose = verbose)
       }
