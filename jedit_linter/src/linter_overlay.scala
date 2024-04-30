@@ -67,14 +67,8 @@ object Linter_Overlay {
       {
         val res = results.map(_._2).flatMap { result =>
           val level = result.severity.toString
-          val edit = result.edit match {
-            case Some(edit) =>
-              XML_Presenter.text("\n  Consider: ") ::: XML_Presenter.edit_markup(edit)
-            case None =>
-              Nil
-          }
           val text = XML_Presenter.text(s"${result.message} (${result.lint_name})")
-          val body = XML_Presenter.add_meta(text ::: edit, result)
+          val body = XML_Presenter.add_meta(text, result)
           level :: body.map(XML.string_of_tree)
         }
 

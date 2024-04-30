@@ -30,15 +30,7 @@ object JSON_Presenter extends Presenter[JSON.T] {
     "stopOffset" -> lint_result.range.stop,
     "startPosition" -> lint_result.line_range.start.print,
     "stopPosition" -> lint_result.line_range.stop.print,
-    "commands" -> lint_result.commands.map(_.command.id),
-    "edit" -> lint_result.edit
-      .map({ edit =>
-        JSON.Object(
-          "startOffset" -> edit.range.start,
-          "stopOffset" -> edit.range.stop,
-          "replacement" -> edit.replacement,
-          "msg" -> edit.msg.orNull)
-      }).orNull)
+    "commands" -> lint_result.commands.map(_.command.id))
 
   override def to_string(report: JSON.T): String =
     JSON.Format.apply(report)
@@ -74,10 +66,6 @@ case class Text_Presenter(do_underline: Boolean) extends Presenter[String] {
         commands_source
       else underline(commands_source, lint_result.range - commands_range.start)
 
-    val edit = lint_result.edit match {
-      case None => ""
-      case Some(edit) => s"\n\n  Suggestion: ${edit.message}\n"
-    }
     def print_severity(severity: Severity.Level): String =
       severity match {
         case Severity.Warn => "Warning"
@@ -87,7 +75,7 @@ case class Text_Presenter(do_underline: Boolean) extends Presenter[String] {
     print_severity(lint_result.severity) + " at " + position.print + ":    [" +
       lint_result.lint_name + "]\n" +
       lint_result.message + "\n\n" +
-      snippet + edit + "\n"
+      snippet + "\n"
   }
 
   private def underline(source: String, range: Text.Range): String = {
@@ -150,17 +138,11 @@ object XML_Presenter extends Presenter[XML.Body] {
     compact: Boolean = true,
     show_descriptions: Boolean = false
   ): XML.Body = {
-    val edit = lint_result.edit match {
-      case Some(edit) => text("\n    Consider: ") ::: edit_markup(edit)
-      case None => Nil
-    }
-
     val inner =
-      if (compact) text(s" ${lint_number + 1}. ${lint_result.message}") ::: edit
+      if (compact) text(s" ${lint_number + 1}. ${lint_result.message}")
       else {
         (position_markup(lint_result)
           ::: text(s" ${lint_result.message}")
-          ::: edit
           ::: text(s"\n    Name: ${lint_result.lint_name}")
           ::: text(s"\n    Severity: ${lint_result.severity}")
           :::
@@ -174,19 +156,11 @@ object XML_Presenter extends Presenter[XML.Body] {
 
   /* xml helpers */
 
-  def edit_markup(edit: Linter.Edit): XML.Body =
-    XML.Elem(
-      Markup(Linter_Markup.LINTER_SENDBACK,
-        Position.Range(edit.range) ::: Markup.Content(edit.replacement)),
-      text(edit.message)) :: Nil
-
   def position_markup(lint_result: Linter.Result): XML.Body = {
     val pos = Position.Offset(lint_result.range.start + 1) :::
       Position.End_Offset(lint_result.range.stop) :::
       Position.File(lint_result.commands.head.node_name.node)
-    text("At ") ::: XML.Elem(
-      Markup(Linter_Markup.GOTO_POSITION, pos),
-      text(lint_result.line_range.start.print)) :: text(":\n")
+    text("At " + lint_result.line_range.start.print + ":\n")
   }
 
   def add_meta(body: XML.Body, lint_result: Linter.Result): XML.Body = {

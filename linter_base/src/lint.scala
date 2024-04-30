@@ -35,20 +35,18 @@ abstract class Proper_Commands_Lint(val name: String, val severity: Severity.Lev
   def add_result(
     message: String,
     range: Text.Range,
-    edit: Option[Edit],
     command: Parsed_Command,
     report: Report
   ): Report =
-    report + Result(name, message, range, edit, severity, command, short_description)
+    report + Result(name, message, range, severity, command, short_description)
 
   def add_result(
     message: String,
     range: Text.Range,
-    edit: Option[Edit],
     commands: List[Parsed_Command],
     report: Report
   ): Report =
-    report + Result(name, message, range, edit, severity, commands, short_description)
+    report + Result(name, message, range, severity, commands, short_description)
 }
 
 abstract class Single_Command_Lint(val name: String, val severity: Severity.Level) extends Lint {

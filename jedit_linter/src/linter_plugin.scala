@@ -13,8 +13,6 @@ import org.gjt.sp.jedit.{EBMessage, EBPlugin}
 
 
 class Linter_Plugin extends EBPlugin {
-  JEdit_Extension.init
-
   val linter = new Linter_Variable()
   val overlays = new Linter_Overlay.Variable
   private var shutdown = false
