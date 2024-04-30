@@ -35,7 +35,6 @@ object Lints {
           val new_report = add_result(
             "Do not switch between apply-style and ISAR proofs.",
             proof.range,
-            None,
             proof,
             report)
           lint_proper(next, new_report)
@@ -71,7 +70,7 @@ object Lints {
           val apply1 = s"apply ${report.source(method1.range)}\n"
           val apply2 = method2.map(some_method => s"apply ${report.source(some_method.range)}\n").getOrElse("")
           val replacement = apply1 + apply2 + "done"
-          report("Use \"apply\" instead of \"by\".", proof.range, Some(Edit(proof.range, replacement)))
+          report("Use \"apply\" instead of \"by\".", proof.range)
         case _ => None
       }
   })
@@ -140,7 +139,6 @@ object Lints {
       } yield add_result(
         """Use "by" instead of a short apply-script.""",
         Parsers.list_range(apply_script.map(_.range)),
-        Some(Edit(Parsers.list_range(apply_script map (_.range)), replacement)),
         apply_script,
         report)
       new_report.getOrElse(report)
@@ -216,7 +214,7 @@ object Lints {
 
     private def report_lint(apply: Parsed_Command, report: Report): Report =
       add_result("Do not use unrestricted auto as a non-terminal proof method.", apply.range,
-        None, apply, report)
+        apply, report)
 
     @tailrec
     def lint_proper(commands: List[Parsed_Command], report: Report): Report =
@@ -267,7 +265,6 @@ object Lints {
           add_result(
             "Compress low-level proof methods into automated search.",
             Parsers.list_range(low_level_commands.map(_.range)),
-            None,
             low_level_commands,
             report)
         }
@@ -332,7 +329,6 @@ object Lints {
           add_result(
             "Use context or bundles instead of global simp attribute changes.",
             command.range,
-            None,
             command,
             report)
         }
@@ -382,7 +378,7 @@ object Lints {
 
     def lint(command: Parsed_Command, report: Reporter): Option[Result] = command match {
       case c@Parsed_Command("apply") =>
-        report("Use Isar instead of apply-scripts.", c.range, None)
+        report("Use Isar instead of apply-scripts.", c.range)
       case _ => None
     }
   })
@@ -417,8 +413,7 @@ object Lints {
           case xs@_ :: _ =>
             report(
               """Do not use axiomatization with a where clause.""",
-              Text.Range(xs.head.range.start, xs.last.range.stop),
-              Some(Edit(Parsers.list_range(xs.map(_.range)), "", Some("Remove where"))))
+              Text.Range(xs.head.range.start, xs.last.range.stop))
           case Nil => None
         }
       case _ => None
@@ -444,8 +439,7 @@ object Lints {
     }
 
     def lint(command: Parsed_Command, report: Reporter): Option[Result] =
-      if (illegal_commands.contains(command.kind))
-        report(message, command.range, Some(Edit(command.range, "", Some("Remove invocation"))))
+      if (illegal_commands.contains(command.kind)) report(message, command.range)
       else None
   }
 
@@ -472,7 +466,7 @@ object Lints {
           _.find(is_smt_oracle) match {
             case None => failure("no match")
             case Some(tokens) =>
-              success(report("Do not use smt_oracle.", tokens.head.range, None))
+              success(report("Do not use smt_oracle.", tokens.head.range))
           }
         }))
   })
@@ -528,10 +522,7 @@ object Lints {
     override def lint_ast_node(elem: Text.Info[AST_Node], report: Reporter): Option[Result] =
       elem.info match {
         case Counter_Example_Finder(_, attributes) if attributes.isEmpty || no_expect(attributes)
-        => report(
-          "Remove counter-example finder command.",
-          elem.range,
-          Some(Edit(elem.range, "", Some("Remove invocation"))))
+        => report("Remove counter-example finder command.", elem.range)
         case _ => None
       }
   })
@@ -548,7 +539,7 @@ object Lints {
       p_command("fun", "primrec", "abbreviation", "definition", "inductive", "inductive_set") ~>
         elem("ident", t => t.info.is_ident && t.info.content.length < 2) ^^ {
           case Text.Info(range, token) =>
-            report(s"""Name "${token.content}" is too short.""", range, None)
+            report(s"""Name "${token.content}" is too short.""", range)
         }
   })
 
@@ -584,7 +575,7 @@ object Lints {
 
     override def parser(reporter: Reporter): Parser[Some[Result]] = {
       def report(attr: Elem): Parser[Some[Result]] =
-        success(reporter("Do not use global attributes on unnamed lemmas.", attr.range, None))
+        success(reporter("Do not use global attributes on unnamed lemmas.", attr.range))
 
       ((p_command("lemma", "theorem", "corollary") ~> p_attr) ~
         (p_atom(t => !t.is_keyword("shows")).* ~> p_show.*)) >> {
@@ -622,7 +613,7 @@ object Lints {
     override def lint_method(method: Text.Info[Method], report: Reporter): Option[Result] =
       method.info match {
         case Simple_Method(RToken(_, name, _), _, _) if TACTICS.contains(name) =>
-          report("Do not use tactic proofs.", method.range, None)
+          report("Do not use tactic proofs.", method.range)
         case Combined_Method(left, _, right, _) =>
           lint_method(left, report).orElse(lint_method(right, report))
         case _ => None
@@ -654,7 +645,7 @@ object Lints {
         _.find(simp_or_cong) match {
           case None => failure("no match")
           case Some(tokens) =>
-            success(report("Do not use transforming attributes on lemmas.", tokens.head.range, None))
+            success(report("Do not use transforming attributes on lemmas.", tokens.head.range))
         }
       }
   })
@@ -678,7 +669,7 @@ object Lints {
     override def lint_method(method: Text.Info[Method], report: Reporter): Option[Result] =
       method.info match {
         case Simple_Method(RToken(_, "rule", _), _, Nil) =>
-          report("Do not use implicit rule.", method.range, None)
+          report("Do not use implicit rule.", method.range)
         case Combined_Method(left, _, right, _) =>
           lint_method(left, report) orElse lint_method(right, report)
         case _ => None
@@ -743,7 +734,7 @@ object Lints {
       for {
         Text.Info(range, s_method) <- method
         if is_complex_method(s_method)
-      } yield report("Keep initial proof methods simple.", range, None).get
+      } yield report("Keep initial proof methods simple.", range).get
   })
 
   val simplifier_isar_initial_method = Lint_Wrapper("simplifier_isar_initial_method",
@@ -775,7 +766,7 @@ object Lints {
         for {
           Text.Info(range, s_method) <- method
           if calls_simplifier(s_method)
-        } yield report("Do not use simplifier as initial proof methods.", range, None).get
+        } yield report("Do not use simplifier as initial proof methods.", range).get
     })
 
   val force_failure = Lint_Wrapper("force_failure",
@@ -797,7 +788,7 @@ object Lints {
     override def lint_method(method: Text.Info[Method], report: Reporter): Option[Result] =
       method.info match {
         case Simple_Method(RToken(_, "simp", _), _, _) =>
-          report("Consider forcing failure.", method.range, None)
+          report("Consider forcing failure.", method.range)
         case _ => None
       }
   })
@@ -825,7 +816,7 @@ object Lints {
       method.info match {
         case Simple_Method(_, _, _) => None
         case Combined_Method(left, Method.Combinator.Struct, _, _) =>
-          if (has_auto(left.info)) report("Do not use apply (auto;...)", method.range, None) else None
+          if (has_auto(left.info)) report("Do not use apply (auto;...)", method.range) else None
         case Combined_Method(left, _, right, _) =>
           lint_method(left, report).orElse(lint_method(right, report))
       }
@@ -850,7 +841,7 @@ object Lints {
     val message: String = "Avoid complex methods."
 
     override def lint_method(method: Text.Info[Method], report: Reporter): Option[Result] =
-      if (is_complex_method(method.info)) report(message, method.range, None)
+      if (is_complex_method(method.info)) report(message, method.range)
       else None
   })
 
@@ -861,7 +852,7 @@ object Lints {
     val long_description: Lint_Description = short_description
 
     override def lint_ast_node(elem: Text.Info[AST_Node], report: Reporter): Option[Result] =
-      report(s"Parsed: ${elem.info}", elem.range, None)
+      report(s"Parsed: ${elem.info}", elem.range)
   })
 }
 

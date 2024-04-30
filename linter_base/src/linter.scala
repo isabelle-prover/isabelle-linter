@@ -21,7 +21,6 @@ object Linter {
     lint_name: String,
     message: String,
     range: Text.Range,
-    edit: Option[Edit],
     severity: Severity.Value,
     commands: List[Parsed_Command],
     short_description: Lint_Description
@@ -37,11 +36,10 @@ object Linter {
       lint_name: String,
       message: String,
       range: Text.Range,
-      edit: Option[Edit],
       severity: Severity.Value,
       command: Parsed_Command,
       short_description: Lint_Description): Result =
-      Result(lint_name, message, range, edit, severity, command :: Nil, short_description)
+      Result(lint_name, message, range, severity, command :: Nil, short_description)
   }
   object Report {
     def init(name: Document.Node.Name): Report = new Report(name, Nil)
@@ -64,18 +62,14 @@ object Linter {
         .sortBy(_.info.id) // Lowest severity first
   }
 
-  case class Edit(range: Text.Range, replacement: String, msg: Option[String] = None) {
-    val message: String = msg.getOrElse(replacement)
-  }
-
   case class Reporter(
     command: Parsed_Command,
     name: String,
     severity: Severity.Level,
     short_description: Lint_Description
   ) {
-    def apply(message: String, range: Text.Range, edit: Option[Edit]): Some[Result] =
-      Some(Result(name, message, range, edit, severity, command, short_description))
+    def apply(message: String, range: Text.Range): Some[Result] =
+      Some(Result(name, message, range, severity, command, short_description))
 
     def source(range: Text.Range): String = command.source(range)
   }
