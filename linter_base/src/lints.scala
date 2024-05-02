@@ -67,8 +67,8 @@ object Lints {
     override def lint_proof(proof: Text.Info[Proof], report: Reporter): Option[Result] =
       proof.info match {
         case By(method1, method2) =>
-          val apply1 = s"apply ${report.source(method1.range)}\n"
-          val apply2 = method2.map(some_method => s"apply ${report.source(some_method.range)}\n").getOrElse("")
+          val apply1 = "apply " + report.source(method1.range) + "\n"
+          val apply2 = method2.map(some_method => "apply " + report.source(some_method.range) + "\n").getOrElse("")
           val replacement = apply1 + apply2 + "done"
           report("Use \"apply\" instead of \"by\".", proof.range)
         case _ => None
@@ -115,16 +115,16 @@ object Lints {
           for {
             method1 <- try_transform(removeApply, apply1, true)
             method2 <- try_transform(removeApply, apply2, true)
-          } yield s"by $method1 $method2"
+          } yield "by " + method1 + " " + method2
         case apply :: _ :: Nil if !has_by =>
           for {
             method <- try_transform(removeApply, apply, true)
-          } yield s"by $method"
+          } yield "by " + method
         case apply :: by :: Nil if has_by =>
           for {
             method1 <- try_transform(removeApply, apply, true)
             method2 <- try_transform(removeBy, by, true)
-          } yield s"by $method1 $method2"
+          } yield "by " + method1 + " " + method2
         case _ => None
       }
     }
@@ -539,7 +539,7 @@ object Lints {
       p_command("fun", "primrec", "abbreviation", "definition", "inductive", "inductive_set") ~>
         elem("ident", t => t.info.is_ident && t.info.content.length < 2) ^^ {
           case Text.Info(range, token) =>
-            report(s"""Name "${token.content}" is too short.""", range)
+            report("Name \"" + token.content + "\" is too short.", range)
         }
   })
 
@@ -852,7 +852,7 @@ object Lints {
     val long_description: Lint_Description = short_description
 
     override def lint_ast_node(elem: Text.Info[AST_Node], report: Reporter): Option[Result] =
-      report(s"Parsed: ${elem.info}", elem.range)
+      report("Parsed: " + elem.info, elem.range)
   })
 }
 

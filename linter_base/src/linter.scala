@@ -327,7 +327,7 @@ Lint isabelle theories.
         case "xml" => XML_Presenter
         case "csv" => CSV_Presenter(configuration)
         case "count" => Count
-        case _ => error(s"Unrecognized reporting mode $mode")
+        case _ => error("Unrecognized reporting mode " + mode)
       }
 
       progress.interrupt_handler {
