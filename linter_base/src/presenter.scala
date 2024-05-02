@@ -139,15 +139,15 @@ object XML_Presenter extends Presenter[XML.Body] {
     show_descriptions: Boolean = false
   ): XML.Body = {
     val inner =
-      if (compact) text(s" ${lint_number + 1}. ${lint_result.message}")
+      if (compact) text(" " + (lint_number + 1) + ". " + lint_result.message)
       else {
         (position_markup(lint_result)
-          ::: text(s" ${lint_result.message}")
-          ::: text(s"\n    Name: ${lint_result.lint_name}")
-          ::: text(s"\n    Severity: ${lint_result.severity}")
+          ::: text(" " + lint_result.message)
+          ::: text("\n    Name: " + lint_result.lint_name)
+          ::: text("\n    Severity: " + lint_result.severity)
           :::
           (if (show_descriptions)
-            text(s"\n    Description: ") :::
+            text("\n    Description: ") :::
               Lint_Description.XML_Presentation.render(lint_result.short_description)
            else Nil))
       }

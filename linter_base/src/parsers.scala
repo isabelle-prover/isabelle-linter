@@ -61,7 +61,7 @@ case class Parsed_Command(
     Token_Parsers.parse(Token_Parsers.token_parser, tokens) match {
       case Token_Parsers.Success(result, Token_Parsers.Token_Reader(Nil)) => result
       case Token_Parsers.Success(_, next) =>
-        Text.Info(range, Failed(s"Failed parsing. $next left"))
+        Text.Info(range, Failed("Failed parsing. " + next + " left"))
       case failure: Token_Parsers.NoSuccess => Text.Info(range, Failed(failure.msg))
     }
 }
