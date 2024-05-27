@@ -99,9 +99,10 @@ case class Text_Presenter(do_underline: Boolean) extends Presenter[String] {
     Utils.map_accum_l(source.trim.split("\n").toList, range, underline).mkString("\n").trim
   }
 
-  override def to_string(report: String): String = if (report.isEmpty) "" else report
+  override def to_string(report: String): String = if (report.isBlank) "" else report
 
-  override def mk_string(reports: List[String]): String = reports.filterNot(_.isBlank).mkString("\n")
+  override def mk_string(reports: List[String]): String =
+    reports.filterNot(_.isBlank).mkString("\n")
 
   override def present(
     lint_report: Linter.Report,
