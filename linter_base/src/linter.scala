@@ -166,8 +166,10 @@ object Linter {
           case Some(snapshot) =>
             val report = Linter.lint_snapshot(snapshot, selection)
 
-            if (console)
-              progress.echo(presenter.to_string(presenter.present(report, header = true)))
+            if (console) {
+              val msg = presenter.to_string(presenter.present(report, header = true))
+              progress.echo_if(msg.nonEmpty, msg)
+            }
 
             Some(report)
         }
