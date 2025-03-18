@@ -45,9 +45,10 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
   }
 
   private class Result(rep: Linter.Result, current: Boolean) {
+    def encode(i: Int): Int = Symbol.explode(rep.node.source.take(i)).length
     val pos =
-      Position.Offset(rep.range.start + 1) :::
-        Position.End_Offset(rep.range.stop) :::
+      Position.Offset(encode(rep.range.start + 1)) :::
+        Position.End_Offset(encode(rep.range.stop)) :::
         Position.File(rep.commands.head.node_name.node)
     def gui_name: GUI.Name = GUI.Name(rep.lint_name, kind = "lint")
     def gui_style: String =
