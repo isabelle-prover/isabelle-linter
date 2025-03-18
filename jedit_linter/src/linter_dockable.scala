@@ -9,36 +9,86 @@ package isabelle.jedit_linter
 import isabelle._
 import isabelle.jedit._
 import isabelle.linter._
+import isabelle.linter.Lint_Description.XML_Presentation
 
-import scala.swing.event.ButtonClicked
-import scala.swing.{Button, CheckBox}
+import scala.swing.{Alignment, Button, CheckBox, Component, Label, ListView, ScrollPane}
+import scala.swing.event.{ButtonClicked, MouseClicked}
 
 import java.awt.BorderLayout
+import javax.swing.{BorderFactory, JList}
 
 import org.gjt.sp.jedit.View
 
 
 class Linter_Dockable(view: View, position: String) extends Dockable(view, position) {
-  /* text area */
+  /* entry */
 
-  private var current_output: List[XML.Tree] = List(XML.Text("Press lint"))
+  private object Result {
+    class Renderer extends ListView.Renderer[Result] {
+      private object component extends Label {
+        opaque = false
+        xAlignment = Alignment.Leading
+        border = BorderFactory.createEmptyBorder(2, 2, 2, 2)
+      }
 
-  val pretty_text_area = new Pretty_Text_Area(view)
-  set_content(pretty_text_area)
+      def componentFor(
+        list: ListView[_ <: Linter_Dockable.this.Result],
+        isSelected: Boolean,
+        focused: Boolean,
+        result: Result,
+        index: Int
+      ): Component = {
+        component.text = result.gui_text
+        component
+      }
+    }
+  }
 
-  override def detach_operation: Option[() => Unit] = pretty_text_area.detach_operation
+  private class Result(rep: Linter.Result, current: Boolean) {
+    val pos =
+      Position.Offset(rep.range.start + 1) :::
+        Position.End_Offset(rep.range.stop) :::
+        Position.File(rep.commands.head.node_name.node)
+    def gui_name: GUI.Name = GUI.Name(rep.lint_name, kind = "lint")
+    def gui_style: String =
+      HTML.background_property(
+        PIDE.rendering(view).color(
+          rep.severity match {
+            case Severity.Warn => Rendering.Color.warning_message
+            case Severity.Error => Rendering.Color.error_message
+          }))
 
-  /* resize */
+    def gui_text: String = {
+      val style = GUI.Style_HTML
+      val bullet = style.triangular_bullet
+      style.enclose_style(gui_style,
+        bullet + " " + (if (current) style.make_bold else identity)(gui_name.set_style(style).toString) + 
+          "<br>" + style.spaces(4) + style.make_text(style.make_text(rep.message)))
+    }
+    def follow(snapshot: Document.Snapshot): Unit =
+      PIDE.editor.hyperlink_position(true, snapshot, pos).foreach(_.follow(view))
+  }
 
-  private def handle_resize(): Unit =
-    GUI_Thread.require { pretty_text_area.zoom(zoom) }
+
+  /* lint view */
+
+  private val lint_view = new ListView(List.empty[Result]) {
+    listenTo(mouse.clicks)
+    reactions += {
+      case MouseClicked(_, point, _, clicks, _) if clicks == 2 =>
+        val index = peer.locationToIndex(point)
+        if (index >= 0) listData(index).follow(PIDE.session.snapshot())
+    }
+  }
+  lint_view.peer.setLayoutOrientation(JList.VERTICAL_WRAP)
+  lint_view.peer.setVisibleRowCount(0)
+  lint_view.selection.intervalMode = ListView.IntervalMode.Single
+  lint_view.renderer = new Result.Renderer
+
+  set_content(new ScrollPane(lint_view))
 
 
   /* update */
-
-  val separator = XML_Presenter.text("----------------")
-  val disabled = XML_Presenter.text("The linter plugin is disabled.")
-  val empty = XML_Presenter.text("No lints found.")
 
   def handle_lint(): Unit = {
     GUI_Thread.require {}
@@ -47,31 +97,24 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
       snapshot <- PIDE.maybe_snapshot(view)
       if !snapshot.is_outdated
     } {
-      val new_output = Linter_Plugin.instance.map(_.linter) match {
-        case Some(linter) if linter.enabled =>
-          val current_command =
-            PIDE.editor.current_command(view, snapshot).getOrElse(Command.empty)
+      val results =
+        Linter_Plugin.instance.map(_.linter) match {
+          case Some(linter) if linter.enabled =>
+            val current_command =
+              PIDE.editor.current_command(view, snapshot).getOrElse(Command.empty)
 
-          val report = linter.lint_report(snapshot)
-          val snapshot_lints = XML_Presenter.present(report, show_descriptions = show_descriptions)
-          val command_lints = XML_Presenter.present(
-            report.command_lints(current_command.id), show_descriptions = true)
+            val snapshot_res = linter.lint_report(snapshot)
+            val current_res = snapshot_res.command_lints(current_command.id)
+            val is_current = current_res.results.toSet
 
-          val all_lints =
-            if (lint_all && snapshot_lints.nonEmpty) separator ::: snapshot_lints
-            else Nil
+            if (lint_all) 
+              snapshot_res.results.map(res => Result(res, is_current(res)))
+            else current_res.results.map(Result(_, true))
 
-          val res = command_lints ::: all_lints
-          if (res.nonEmpty) res else empty
-        case _ => disabled
-      }
+          case _ => Nil
+        }
 
-      if (current_output != new_output) {
-        pretty_text_area.update(snapshot, Command.Results.empty,
-          List(XML.elem("", Pretty.separate(new_output))))
-        current_output = new_output
-      }
-      else pretty_text_area.refresh()
+      if (lint_view.listData.toList != results) lint_view.listData = results
     }
   }
 
@@ -102,22 +145,6 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
       lint_all = selected; handle_lint()
     }
     selected = lint_all
-  }
-
-  private def show_descriptions: Boolean = PIDE.options.bool("lint_descriptions")
-
-  private def show_descriptions_=(b: Boolean): Unit = {
-    if (show_descriptions != b) {
-      PIDE.options.bool("lint_descriptions") = b
-      PIDE.editor.flush_edits(hidden = true)
-      PIDE.editor.flush()
-    }
-  }
-
-  private val show_descriptions_checkbox = new CheckBox("Show Descriptions") {
-    tooltip = "Whether to show lint descriptions"
-    reactions += { case ButtonClicked(_) => show_descriptions = selected; handle_lint() }
-    selected = show_descriptions
   }
 
   private val auto_lint_button = new CheckBox("Auto lint") {
@@ -151,10 +178,8 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
     selected = linter
   }
 
-  private val zoom = new Font_Info.Zoom { override def changed(): Unit = handle_resize() }
-
   private val controls =
-    Wrap_Panel(List(linter_button, auto_lint_button, lint_all_button, show_descriptions_checkbox, lint_button, zoom))
+    Wrap_Panel(List(linter_button, auto_lint_button, lint_all_button, lint_button))
 
   add(controls.peer, BorderLayout.NORTH)
 
@@ -165,7 +190,6 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
     Session.Consumer[Any](getClass.getName) {
       case _: Session.Global_Options =>
         GUI_Thread.later {
-          handle_resize()
           auto_lint()
         }
 
@@ -182,7 +206,6 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
     PIDE.session.global_options += main
     PIDE.session.commands_changed += main
     PIDE.session.caret_focus += main
-    handle_resize()
     auto_lint()
   }
 

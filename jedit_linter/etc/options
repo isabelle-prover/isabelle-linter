@@ -5,6 +5,3 @@ public option linter_enabled : bool = true
 
 public option lint_all : bool = true
   -- "display the lints of the whole document"
-
-public option lint_descriptions : bool = true
-  -- "display the descriptions of the lints"
