@@ -67,7 +67,8 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
       }
 
       if (current_output != new_output) {
-        pretty_text_area.update(snapshot, Command.Results.empty, Pretty.separate(new_output))
+        pretty_text_area.update(snapshot, Command.Results.empty,
+          List(XML.elem("", Pretty.separate(new_output))))
         current_output = new_output
       }
       else pretty_text_area.refresh()

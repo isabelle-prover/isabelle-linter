@@ -87,14 +87,12 @@ object Linter {
   /* linting */
 
   def read_theory(theory_context: Export.Theory_Context): Option[Snapshot] = {
-    def decode_bytes(bytes: Bytes): String =
-      Symbol.output(false, bytes.text)
+    def decode(str: String): String = Symbol.output(false, str)
 
-    def read(name: String): Export.Entry =
-      theory_context(name, permissive = true)
+    def read(name: String): Export.Entry = theory_context(name, permissive = true)
 
     def read_xml(name: String): XML.Body =
-      YXML.parse_body(decode_bytes(read(name).bytes), cache = theory_context.cache)
+      YXML.parse_body(read(name).bytes, recode = decode, cache = theory_context.cache)
 
     for ((thy_file, _) <- theory_context.files(permissive = true)) yield {
       val node_name =
