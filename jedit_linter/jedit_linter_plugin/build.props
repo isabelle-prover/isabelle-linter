@@ -6,8 +6,7 @@ requirements = \
   env:ISABELLE_LINTER_JAR
 resources = \
   dockables.xml \
-  plugin.props \
-  services.xml
+  plugin.props
 sources = \
   dockables.scala \
   plugin.scala
