@@ -5,7 +5,7 @@ Linter for Isabelle, with jEdit integration.
 Requires Isabelle >= `2021-1-RC0`.
 The linter can be used as a stand-alone tool or as a jEdit component.
 
-To install, download the release matching your Isabelle release (or clone the devel branch for isabelle-devel) into `<DIR>`.
+To install, download the [release](https://github.com/isabelle-prover/isabelle-linter/releases) matching your Isabelle release (or clone the repository for isabelle-devel) into `<DIR>`.
 Then run: `isabelle components -u <DIR>`.
 On Windows, use the `Cygwin-Terminal` for this.
 
