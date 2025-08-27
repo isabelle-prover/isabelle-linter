@@ -81,7 +81,7 @@ object Token_Markup {
 
   def from_xml(thy_xml: XML.Body): List[Command_Span.Span] = {
 
-    def find_span(t: XML.Tree): Option[Markup.Command_Span.Arg] = t match {
+    def find_span(t: XML.Tree): Option[Markup.Command_Span.Args] = t match {
       case XML.Elem(Markup.Command_Span(arg), _) => Some(arg)
       case XML.Elem(_, body) => body.collectFirst((find_span _).unlift)
       case _ => None
