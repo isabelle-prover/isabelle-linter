@@ -65,6 +65,7 @@ Print lint descriptions.
       Bundle("afp_mandatory", errors = Set(
         Lints.unfinished_proof.name,
         Lints.bad_style_command.name,
+        Lints.proof_finder.name,
         Lints.counter_example_finder.name,
         Lints.global_attribute_on_unnamed_lemma.name,
         Lints.simplifier_isar_initial_method.name,
