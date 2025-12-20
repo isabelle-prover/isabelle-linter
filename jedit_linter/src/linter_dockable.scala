@@ -67,7 +67,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
           "<br>" + style.spaces(4) + style.make_text(style.make_text(rep.message)))
     }
     def follow(snapshot: Document.Snapshot): Unit =
-      PIDE.editor.hyperlink_position(true, snapshot, pos).foreach(_.follow(view))
+      PIDE.editor.hyperlink_position(snapshot, pos, focus = true).foreach(_.follow(view))
   }
 
 
