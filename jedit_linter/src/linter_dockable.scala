@@ -44,7 +44,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
     }
   }
 
-  private class Result(rep: Linter.Result, current: Boolean) {
+  private class Result(rendering: JEdit_Rendering, rep: Linter.Result, current: Boolean) {
     def encode(i: Int): Int = Symbol.explode(rep.node.source.take(i)).length
     val pos =
       Position.Offset(encode(rep.range.start + 1)) :::
@@ -53,7 +53,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
     def gui_name: GUI.Name = GUI.Name(rep.lint_name, kind = "lint")
     def gui_style: String =
       HTML.background_property(
-        PIDE.rendering(view).color(
+        rendering.color(
           rep.severity match {
             case Severity.Warn => Rendering.Color.warning_message
             case Severity.Error => Rendering.Color.error_message
@@ -109,9 +109,8 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
             val current_res = snapshot_res.command_lints(current_command.id)
             val is_current = current_res.results.toSet
 
-            if (lint_all)
-              snapshot_res.results.map(res => Result(res, is_current(res)))
-            else current_res.results.map(Result(_, true))
+            if (lint_all) snapshot_res.results.map(res => Result(rendering, res, is_current(res)))
+            else current_res.results.map(Result(rendering, _, true))
 
           case _ => Nil
         }
