@@ -1,3 +1,5 @@
+(* This files is automatically and directly loaded to provide a print function.
+   Opening this file in the editor will not work properly. *)
 theory Linter
   imports Pure
 begin
