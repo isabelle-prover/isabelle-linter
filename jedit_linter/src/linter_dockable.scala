@@ -96,6 +96,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
 
     for {
       snapshot <- PIDE.maybe_snapshot(view)
+      rendering <- PIDE.maybe_rendering(view)
       if !snapshot.is_outdated
     } {
       val results =
@@ -108,7 +109,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
             val current_res = snapshot_res.command_lints(current_command.id)
             val is_current = current_res.results.toSet
 
-            if (lint_all) 
+            if (lint_all)
               snapshot_res.results.map(res => Result(res, is_current(res)))
             else current_res.results.map(Result(_, true))
 
