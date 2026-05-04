@@ -3,8 +3,6 @@ theory Linter
 begin
 
 ML \<open>
-open Command;
-
 val _ =
   let
     fun get_out s = case s of
@@ -21,7 +19,7 @@ val _ =
           in write_msgs args1 end
       | _ => ()
   in
-    print_function "print_xml"
+    Command.print_function "print_xml"
       (fn {args, ...} =>
         SOME {delay = NONE, pri = Task_Queue.urgent_pri + 1, persistent = false, strict = false,
           print_fn = fn _ => fn _ => write_msgs args})
