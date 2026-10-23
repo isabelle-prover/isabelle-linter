@@ -13,6 +13,13 @@ import scala.annotation.tailrec
 
 
 object Token_Markup {
+  val elements =
+    Markup.Elements(
+      Markup.COMMENT, Markup.KEYWORD1, Markup.CARTOUCHE, Markup.LANGUAGE, Markup.ENTITY,
+      Markup.KEYWORD2, Markup.ALT_STRING, Markup.STRING, Markup.DELIMITER, Markup.FREE,
+      Markup.TFREE, Markup.QUASI_KEYWORD, Markup.KEYWORD3, Markup.VAR, Markup.TVAR, Markup.SKOLEM,
+      Markup.WARNING, Markup.CLASS_PARAMETER, Markup.EXPORT_PATH)
+
   def map_tokens(tree: XML.Tree): List[Token] = {
     def mk_token(kind: Token.Kind.Value, body: XML.Body): List[Token] =
       List(Token(kind, XML.content(body)))
@@ -77,66 +84,5 @@ object Token_Markup {
       case XML.Elem(Markup(Markup.EXPORT_PATH, _), body) => body.flatMap(map_tokens)
       case t => mk_token(Token.Kind.UNPARSED, List(t))
     }
-  }
-
-  def from_xml(thy_xml: XML.Body): List[Command_Span.Span] = {
-
-    def find_span(t: XML.Tree): Option[Markup.Command_Span.Args] = t match {
-      case XML.Elem(Markup.Command_Span(arg), _) => Some(arg)
-      case XML.Elem(_, body) => body.collectFirst((find_span _).unlift)
-      case _ => None
-    }
-
-    @tailrec
-    def reduce(start: Int, body: XML.Body, res: List[(Command_Span.Span, Int)]): List[Command_Span.Span] = {
-      def is_ignored(t: XML.Tree): Boolean = t match {
-        case XML.Text(ws) if ws.isBlank => true
-        case XML.Elem(Markup(Markup.COMMENT, Nil), _) => true
-        case _ => false
-      }
-
-      body match {
-        case tree :: body1 =>
-          tree match {
-            case XML.Elem(Markup.Command_Span(arg), trees) =>
-              val stop = start + XML.text_length(trees)
-              val kind = Command_Span.Command_Span(
-                proper_string(arg.kind), arg.name, Position.Range(Text.Range(start, stop)))
-              val span = Command_Span.Span(kind, trees.flatMap(map_tokens))
-              reduce(stop, body1, res :+ (span, start))
-            case XML.Elem(Markup(Markup.COMMENT, Nil), _) =>
-              val trees = tree :: body1.takeWhile(is_ignored)
-              val span = Command_Span.Span(Command_Span.Ignored_Span, trees.flatMap(map_tokens))
-              reduce(
-                start + XML.text_length(trees), body1.drop(trees.length - 1), res :+ (span, start))
-            case XML.Text(t) if t.isBlank =>
-              val trees = tree :: body1.takeWhile(is_ignored)
-              val span = Command_Span.Span(Command_Span.Ignored_Span, trees.flatMap(map_tokens))
-              reduce(
-                start + XML.text_length(trees), body1.drop(trees.length - 1), res :+ (span, start))
-            case t =>
-              find_span(t) match {
-              case Some(arg) if XML.content(t) == arg.name =>
-                val stop = start + arg.name.length
-                val range = Position.Range(Text.Range(start, stop))
-                val kind1 = Command_Span.Command_Span(proper_string(arg.kind), arg.name, range)
-                val span = Command_Span.Span(kind1, List(Token(Token.Kind.COMMAND, arg.name)))
-                reduce(stop, body1, res :+ (span, start))
-              case _ =>
-                val span = Command_Span.Span(Command_Span.Ignored_Span, map_tokens(t))
-                reduce(start + XML.text_length(List(t)), body1, res :+ (span, start))
-            }
-          }
-        case Nil => res.map(_._1)
-      }
-    }
-
-    def unwrap(t: XML.Tree): XML.Tree = t match {
-      case XML.Wrapped_Elem(markup, _, body) => XML.Elem(markup, body.map(unwrap))
-      case XML.Elem(markup, body) => XML.Elem(markup, body.map(unwrap))
-      case t: XML.Text => t
-    }
-
-    reduce(start = 0, thy_xml.map(unwrap), res = Nil)
   }
 }

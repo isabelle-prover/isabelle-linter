@@ -86,47 +86,37 @@ object Linter {
 
   /* linting */
 
-  def read_theory(theory_context: Export.Theory_Context): Option[Snapshot] = {
-    def decode(str: String): String = Symbol.output(false, str)
+  def read_theory(theory_context: Export.Theory_Context): Option[Snapshot] =
+    for (snapshot <- Build.read_theory(theory_context)) yield {
+      val node_name = snapshot.node_name
 
-    def read(name: String): Export.Entry = theory_context(name, permissive = true)
+      def space(start: Int, stop: Int): List[Token] = {
+        val content = XML.content(snapshot.xml_markup(Text.Range(start, stop)))
+        if (content.isEmpty) Nil else List(Token(Token.Kind.SPACE, content))
+      }
 
-    def read_xml(name: String): XML.Body =
-      YXML.parse_body(read(name).bytes, recode = decode, cache = theory_context.cache)
+      def command(kind: Command_Span.Kind, tokens: List[Token]): Command =
+        Command(Document_ID.make(), node_name, Blobs_Info.empty, Command_Span.Span(kind, tokens))
 
-    for ((thy_file, _) <- theory_context.files(permissive = true)) yield {
-      val node_name =
-        Document.Node.Name(thy_file, theory = theory_context.theory)
-
-      val thy_xml = read_xml(Export.MARKUP)
-      val command_spans = Token_Markup.from_xml(thy_xml)
-
-      val counter = Counter.make()
-
-      val (state0, node_edits, commands, _) = command_spans.foldLeft(State.init,
-        List.empty[Text.Edit], List.empty[Command], 0) {
-          case ((st, ed, cmd, offset), command_span) =>
-            val command = Command(counter(), node_name, Blobs_Info.empty, command_span)
-            (st.define_command(command), ed :+ Text.Edit.insert(offset, command.source),
-              cmd :+ command, offset + command.length)
+      // Original snapshot only contains single command with unparsed span.
+      val commands =
+        for {
+         range <- snapshot.command_ranges(Text.Range.full)
+         case Text.Info(core_range, arg) <- snapshot.command_spans(range)
+        } yield {
+          val kind = Command_Span.Command_Span(Some(arg.kind), arg.name, Position.none)
+          val body = snapshot.xml_markup(core_range, Token_Markup.elements)
+          val trailing = space(core_range.stop, range.stop)
+          val tokens = body.flatMap(Token_Markup.map_tokens) ::: trailing
+          core_range -> command(kind, tokens)
         }
 
-      val version = Version.init
-      val nodes0 = version.nodes
-      val nodes1 = nodes0 + (node_name -> nodes0(node_name).update_commands(Linear_Set.from(commands)))
-      val version1 = Version.make(nodes1)
-
-      val edits: List[Edit_Text] =
-        List(node_name -> Node.Edits(node_edits))
-
-      val state1 =
-        state0.continue_history(Future.value(version), edits, Future.value(version1))
-          .define_version(version1, state0.the_assignment(version))
-          .assign(version1.id, Nil, commands.map(c => c.id -> List(Document_ID.make())))._2
-
-      state1.snapshot(node_name = node_name)
+      if (commands.isEmpty) snapshot
+      else {
+        val leading = command(Command_Span.Ignored_Span, space(0, commands.head._1.start))
+        snapshot.snippet(leading :: commands.map(_._2), Document.Blobs.empty)
+      }
     }
-  }
 
   def lint_snapshot(snapshot: Document.Snapshot, lint_selection: Lint_Store.Selection): Report = {
     val parsed_commands = snapshot.node
