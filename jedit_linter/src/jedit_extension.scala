@@ -5,6 +5,8 @@ Various jEdit extensions.
 
 package isabelle.jedit_linter
 
+import scala.language.unsafeNulls
+
 import java.lang.invoke.{MethodHandles, VarHandle}
 import java.lang.reflect.{Field, Modifier}
 

@@ -5,6 +5,7 @@ Dockable window for the linter.
 
 package isabelle.jedit_linter
 
+import scala.language.unsafeNulls
 
 import isabelle._
 import isabelle.jedit._
@@ -67,7 +68,7 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
           "<br>" + style.spaces(4) + style.make_text(style.make_text(rep.message)))
     }
     def follow(snapshot: Document.Snapshot): Unit =
-      PIDE.editor.hyperlink_position(snapshot, pos, focus = true).foreach(_.follow(view))
+      JEdit_Editor.hyperlink_position(snapshot, pos, focus = true).foreach(_.follow(editor_context))
   }
 
 
@@ -95,15 +96,15 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
     GUI_Thread.require {}
 
     for {
-      snapshot <- PIDE.maybe_snapshot(view)
-      rendering <- PIDE.maybe_rendering(view)
+      snapshot <- PIDE.maybe_snapshot(Some(view))
+      rendering <- PIDE.maybe_rendering(Some(view))
       if !snapshot.is_outdated
     } {
       val results =
         Linter_Plugin.instance.map(_.linter) match {
           case Some(linter) if linter.enabled =>
             val current_command =
-              PIDE.editor.current_command(view, snapshot).getOrElse(Command.empty)
+              JEdit_Editor.current_command(editor_context, snapshot).getOrElse(Command.empty)
 
             val snapshot_res = linter.lint_report(snapshot)
             val current_res = snapshot_res.command_lints(current_command.id)
@@ -135,8 +136,8 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
   private def lint_all_=(b: Boolean): Unit = {
     if (lint_all != b) {
       PIDE.options.bool("lint_all") = b
-      PIDE.editor.flush_edits(hidden = true)
-      PIDE.editor.flush()
+      JEdit_Editor.flush_edits(hidden = true)
+      JEdit_Editor.flush()
     }
   }
 
@@ -165,11 +166,11 @@ class Linter_Dockable(view: View, position: String) extends Dockable(view, posit
     if (linter != b) {
       PIDE.options.bool("linter_enabled") = b
       Linter_Plugin.instance.foreach { plugin =>
-        plugin.linter.update(PIDE.options.value)
+        plugin.linter.update(PIDE.options)
         plugin.overlays.clear()
       }
-      PIDE.editor.flush_edits(hidden = true)
-      PIDE.editor.flush()
+      JEdit_Editor.flush_edits(hidden = true)
+      JEdit_Editor.flush()
     }
   }
 

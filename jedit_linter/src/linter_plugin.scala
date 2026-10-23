@@ -5,6 +5,7 @@ Linter plugin instance and (de-)activation handling.
 
 package isabelle.jedit_linter
 
+import scala.language.unsafeNulls
 
 import isabelle.jedit._
 
@@ -34,7 +35,7 @@ class Linter_Plugin extends EBPlugin {
     message match {
       case _: PluginUpdate =>
         if (PIDE._plugin != null && Linter_Plugin.instance.isEmpty && !shutdown) {
-          linter.update(PIDE.options.value)
+          linter.update(PIDE.options)
           linter.install_handlers()
           Linter_Plugin._instance = Some(this)
         } else if (Linter_Plugin.instance.isDefined) {
@@ -42,7 +43,7 @@ class Linter_Plugin extends EBPlugin {
         }
       case _: PropertiesChanged =>
         if (PIDE._plugin != null) {
-          linter.update(PIDE.options.value)
+          linter.update(PIDE.options)
         }
       case _ =>
     }

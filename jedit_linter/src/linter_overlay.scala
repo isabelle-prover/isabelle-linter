@@ -5,6 +5,8 @@ Lint results as stateful command overlay.
 
 package isabelle.jedit_linter
 
+import scala.language.unsafeNulls
+
 import isabelle._
 import isabelle.jedit._
 import isabelle.linter._
@@ -16,10 +18,10 @@ object Linter_Overlay {
   private val overlay_fn = "print_xml"
 
   private def add_overlay(command: Command, args: List[String]) =
-    PIDE.editor.insert_overlay(command, overlay_fn, args)
+    JEdit_Editor.insert_overlay(command, overlay_fn, args)
 
   private def remove_overlay(command: Command, args: List[String]) =
-    PIDE.editor.remove_overlay(command, overlay_fn, args)
+    JEdit_Editor.remove_overlay(command, overlay_fn, args)
 
   object State {
     def empty: State = Map.empty

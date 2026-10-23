@@ -5,6 +5,7 @@ Lint report presentation in different formats.
 
 package isabelle.linter
 
+import scala.language.unsafeNulls
 
 import isabelle.*
 import isabelle.Document.Node

@@ -248,7 +248,7 @@ object Linter {
     val session_groups = new mutable.ListBuffer[String]
     var max_jobs: Option[Int] = None
     var list_lints = false
-    var options = Options.init(specs = Options.Spec.ISABELLE_BUILD_OPTIONS)
+    var options = Options.init(update = Options.Spec.ISABELLE_BUILD_OPTIONS)
     var mode = "text"
     var verbose = false
     val exclude_sessions = new mutable.ListBuffer[String]

@@ -5,6 +5,7 @@ Linter state and snapshot cache.
 
 package isabelle.jedit_linter
 
+import scala.language.unsafeNulls
 
 import isabelle._
 import isabelle.jedit.PIDE
